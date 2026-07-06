@@ -1,0 +1,717 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>My Mouton</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html { scroll-behavior:smooth; }
+  body {
+    background:#06091a;
+    color:#e8e6df;
+    font-family:"Hiragino Kaku Gothic ProN","Yu Gothic",sans-serif;
+    overflow-x:hidden;
+    min-height:100vh;
+  }
+
+  /* header */
+  .header {
+    display:flex; justify-content:space-between; align-items:center;
+    padding:20px max(5vw,16px) 12px;
+    border-bottom:1px solid rgba(255,255,255,.05);
+  }
+  .header a { color:rgba(232,199,119,.7); text-decoration:none; font-size:12px; letter-spacing:.2em; transition:color .3s; }
+  .header a:hover { color:#e8c777; }
+  .header h1 {
+    font-family:"Didot","Bodoni 72","Times New Roman",serif;
+    font-weight:400; font-size:22px; letter-spacing:.15em; color:#f3ead2;
+  }
+  .header .period { font-size:11px; color:rgba(180,190,210,.5); letter-spacing:.15em; }
+
+  .page { max-width:480px; margin:0 auto; padding:0 max(4vw,14px) 80px; }
+
+  /* section labels */
+  .sec-label {
+    font-size:10px; letter-spacing:.4em; text-indent:.4em;
+    color:rgba(232,199,119,.75); margin:32px 0 14px; text-align:center;
+  }
+
+  /* main gauge (repayment) */
+  .main-gauge { text-align:center; margin:28px 0 8px; }
+  .main-gauge svg { display:block; margin:0 auto; }
+  .gauge-sub { display:flex; justify-content:space-between; font-size:11px; color:rgba(180,190,210,.55); padding:0 20px; margin-bottom:24px; }
+
+  /* stat row */
+  .stats { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:8px; }
+  .stat {
+    background:linear-gradient(160deg, rgba(18,24,42,.95), rgba(10,14,28,.97));
+    border:1px solid rgba(255,255,255,.06); border-radius:16px; padding:16px;
+  }
+  .stat .label { font-size:10px; letter-spacing:.2em; color:rgba(180,190,210,.5); margin-bottom:6px; }
+  .stat .val { font-size:20px; font-weight:600; color:#f0ead9; }
+  .stat .val.gold { color:#e8c777; }
+  .stat .val.red { color:#e2554e; }
+  .stat .val.teal { color:#5dcaa5; }
+  .stat .sub-val { font-size:10px; color:rgba(180,190,210,.45); margin-top:3px; }
+
+  /* progress bar */
+  .prog-card {
+    background:linear-gradient(160deg, rgba(18,24,42,.95), rgba(10,14,28,.97));
+    border:1px solid rgba(255,255,255,.06); border-radius:16px; padding:16px; margin-bottom:10px;
+  }
+  .prog-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; }
+  .prog-header .label { font-size:11px; color:rgba(180,190,210,.6); }
+  .prog-header .pct { font-size:13px; font-weight:600; }
+  .prog-bar { height:8px; background:rgba(255,255,255,.06); border-radius:4px; overflow:hidden; }
+  .prog-fill { height:100%; border-radius:4px; transition:width .8s cubic-bezier(.2,.7,.2,1); }
+
+  /* category breakdown */
+  .cat-list { margin-top:8px; }
+  .cat-row {
+    display:flex; align-items:center; gap:10px; padding:9px 0;
+    border-bottom:1px solid rgba(255,255,255,.04); font-size:13px;
+  }
+  .cat-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+  .cat-name { flex:1; color:rgba(210,215,225,.8); }
+  .cat-amt { color:#f0ead9; font-weight:500; }
+  .cat-tag { font-size:10px; padding:2px 7px; border-radius:5px; letter-spacing:.06em; }
+  .cat-tag.invest { background:rgba(93,202,165,.12); color:#5dcaa5; }
+  .cat-tag.consume { background:rgba(180,195,230,.1); color:rgba(180,195,230,.8); }
+  .cat-tag.waste { background:rgba(226,85,78,.1); color:#e2776e; }
+
+  /* ricework card */
+  .rice-card {
+    background:linear-gradient(160deg, rgba(20,26,48,.95), rgba(12,16,32,.97));
+    border:1px solid rgba(150,170,220,.15); border-radius:18px; padding:20px; margin-top:10px;
+  }
+  .rice-card h3 {
+    font-family:"Didot","Bodoni 72",serif; font-weight:400; font-size:18px;
+    color:#f0ead9; letter-spacing:.1em; margin-bottom:4px;
+  }
+  .rice-card .rice-sub { font-size:10px; letter-spacing:.2em; color:rgba(150,170,220,.5); margin-bottom:16px; }
+  .rice-stats { display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; margin-bottom:14px; }
+  .rice-stat { text-align:center; }
+  .rice-stat .r-val { font-size:20px; font-weight:600; color:#f0ead9; }
+  .rice-stat .r-label { font-size:10px; color:rgba(150,170,220,.5); margin-top:2px; }
+  .rice-prog { margin-top:4px; }
+  .rice-prog .prog-header .pct { color:rgba(180,195,230,.85); }
+
+  /* income tracker */
+  .income-card {
+    background:linear-gradient(160deg, rgba(30,24,14,.95), rgba(18,14,8,.97));
+    border:1px solid rgba(232,199,119,.18); border-radius:18px; padding:20px;
+  }
+  .income-card h3 {
+    font-family:"Didot","Bodoni 72",serif; font-weight:400; font-size:18px;
+    color:#e8c777; letter-spacing:.1em; margin-bottom:14px;
+  }
+  .income-gauge { text-align:center; margin-bottom:10px; }
+  .income-sources { margin-top:8px; }
+  .inc-row {
+    display:flex; justify-content:space-between; align-items:center;
+    padding:8px 0; border-bottom:1px solid rgba(232,199,119,.08); font-size:12px;
+  }
+  .inc-row .src { color:rgba(210,215,225,.7); }
+  .inc-row .amt { color:#e8c777; font-weight:500; }
+
+  /* chart area */
+  .chart-card {
+    background:linear-gradient(160deg, rgba(18,24,42,.95), rgba(10,14,28,.97));
+    border:1px solid rgba(255,255,255,.06); border-radius:18px; padding:20px;
+  }
+  .chart-card h3 {
+    font-size:14px; font-weight:500; color:rgba(210,215,225,.85); letter-spacing:.08em; margin-bottom:14px;
+  }
+
+  /* report preview */
+  .report {
+    background:linear-gradient(160deg, rgba(18,24,42,.95), rgba(10,14,28,.97));
+    border:1px solid rgba(255,255,255,.06); border-radius:18px; padding:20px; margin-top:10px;
+  }
+  .report h3 { font-size:14px; font-weight:500; color:rgba(210,215,225,.85); margin-bottom:14px; letter-spacing:.08em; }
+  .report-section { margin-bottom:14px; }
+  .report-section .r-icon { font-size:10px; letter-spacing:.25em; margin-bottom:6px; }
+  .report-section .r-icon.strict { color:#e2554e; }
+  .report-section .r-icon.coach { color:#5dcaa5; }
+  .report-section p { font-size:12.5px; line-height:1.8; color:rgba(210,215,225,.8); }
+  .report-date { font-size:10px; color:rgba(150,160,180,.4); text-align:right; margin-top:8px; }
+
+  /* back to top */
+  .foot { text-align:center; padding:40px 0 20px; }
+  .foot a { color:rgba(232,199,119,.5); text-decoration:none; font-size:11px; letter-spacing:.3em; transition:color .3s; }
+  .foot a:hover { color:#e8c777; }
+
+  /* FAB */
+  .gas-btn {
+    position:fixed; bottom:90px; right:20px; z-index:100;
+    width:36px; height:36px; border-radius:50%; border:none;
+    background:rgba(255,255,255,.12); color:#aaa; font-size:16px;
+    cursor:pointer; display:flex; align-items:center; justify-content:center;
+  }
+  .gas-btn:hover { background:rgba(255,255,255,.22); color:#fff; }
+  .fab {
+    position:fixed; bottom:28px; right:28px; z-index:90;
+    width:56px; height:56px; border-radius:50%; border:none; cursor:pointer;
+    background:linear-gradient(135deg,#c1272d,#e2554e);
+    box-shadow:0 6px 24px rgba(193,39,45,.45);
+    font-size:28px; color:#fff; display:flex; align-items:center; justify-content:center;
+    transition:transform .3s, box-shadow .3s;
+  }
+  .fab:hover { transform:scale(1.08); box-shadow:0 8px 30px rgba(193,39,45,.6); }
+  .fab.open { transform:rotate(45deg); background:linear-gradient(135deg,#555,#777); box-shadow:0 4px 16px rgba(0,0,0,.4); }
+
+  /* overlay */
+  .overlay {
+    position:fixed; inset:0; z-index:80;
+    background:rgba(4,7,15,.85); backdrop-filter:blur(6px);
+    opacity:0; pointer-events:none; transition:opacity .35s;
+  }
+  .overlay.show { opacity:1; pointer-events:auto; }
+
+  /* modal */
+  .modal {
+    position:fixed; bottom:0; left:0; right:0; z-index:85;
+    max-width:480px; margin:0 auto;
+    background:linear-gradient(180deg,#10162a,#0a0f1e);
+    border-top:1px solid rgba(232,199,119,.2);
+    border-radius:24px 24px 0 0;
+    padding:24px 20px 36px;
+    transform:translateY(100%); transition:transform .4s cubic-bezier(.2,.7,.2,1);
+    max-height:85vh; overflow-y:auto;
+  }
+  .modal.show { transform:translateY(0); }
+  .modal h3 {
+    font-family:"Didot","Bodoni 72",serif; font-weight:400; font-size:18px;
+    color:#f0ead9; letter-spacing:.1em; margin-bottom:18px; text-align:center;
+  }
+
+  /* tab switcher */
+  .tabs { display:flex; gap:6px; margin-bottom:20px; justify-content:center; flex-wrap:wrap; }
+  .tab-btn {
+    background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.08);
+    color:rgba(200,205,220,.6); font-size:12px; padding:7px 14px;
+    border-radius:10px; cursor:pointer; transition:all .3s; letter-spacing:.06em;
+  }
+  .tab-btn.active { background:rgba(232,199,119,.12); border-color:rgba(232,199,119,.35); color:#e8c777; }
+  .tab-btn:hover { border-color:rgba(232,199,119,.25); }
+
+  /* form */
+  .form-panel { display:none; }
+  .form-panel.active { display:block; }
+  .field { margin-bottom:14px; }
+  .field label {
+    display:block; font-size:11px; letter-spacing:.15em;
+    color:rgba(180,190,210,.55); margin-bottom:6px;
+  }
+  .field input, .field select, .field textarea {
+    width:100%; background:rgba(255,255,255,.04);
+    border:1px solid rgba(255,255,255,.1); border-radius:10px;
+    color:#e8e6df; font-size:14px; padding:12px 14px;
+    font-family:inherit; outline:none; transition:border-color .3s;
+  }
+  .field input:focus, .field select:focus, .field textarea:focus {
+    border-color:rgba(232,199,119,.45);
+  }
+  .field select { appearance:none; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23888' fill='none' stroke-width='1.5'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 14px center; padding-right:36px; }
+  .field select option { background:#10162a; color:#e8e6df; }
+  .field textarea { resize:vertical; min-height:56px; }
+  .field-row { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+
+  .submit-btn {
+    width:100%; padding:14px; border:none; border-radius:12px; cursor:pointer;
+    background:linear-gradient(135deg,#c1272d,#e2554e);
+    color:#fff; font-size:14px; font-weight:500; letter-spacing:.1em;
+    margin-top:8px; transition:opacity .3s;
+  }
+  .submit-btn:hover { opacity:.88; }
+  .submit-btn:active { transform:scale(.98); }
+
+  .toast {
+    position:fixed; top:24px; left:50%; transform:translateX(-50%) translateY(-80px);
+    z-index:100; background:rgba(93,202,165,.9); color:#04070f;
+    padding:12px 24px; border-radius:12px; font-size:13px; font-weight:500;
+    letter-spacing:.08em; opacity:0; transition:all .5s cubic-bezier(.2,.7,.2,1);
+    pointer-events:none;
+  }
+  .toast.show { transform:translateX(-50%) translateY(0); opacity:1; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <a href="./moutons_portal_v3.html">← Mouton&#39;s</a>
+  <h1>My Mouton</h1>
+  <span class="period">7月前半</span>
+</div>
+
+<div class="page">
+
+  <!-- ===== REPAYMENT GAUGE ===== -->
+  <p class="sec-label">REPAYMENT</p>
+  <div class="main-gauge">
+    <svg viewBox="0 0 220 125" width="220" height="125">
+      <path d="M 18 110 A 92 92 0 0 1 202 110" fill="none" stroke="rgba(255,255,255,.07)" stroke-width="16" stroke-linecap="round"/>
+      <path d="M 18 110 A 92 92 0 0 1 168 38" fill="none" stroke="#c1272d" stroke-width="16" stroke-linecap="round">
+        <animate attributeName="d" from="M 18 110 A 92 92 0 0 1 18 110" to="M 18 110 A 92 92 0 0 1 168 38" dur="1.6s" fill="freeze" calcMode="spline" keySplines="0.2 0.7 0.2 1"/>
+      </path>
+      <text x="110" y="88" text-anchor="middle" font-size="36" fill="#f3ead2" font-weight="600">62%</text>
+      <text x="110" y="110" text-anchor="middle" font-size="11" fill="rgba(200,205,220,.55)">返済進捗</text>
+    </svg>
+  </div>
+  <div class="gauge-sub">
+    <span>残り ¥312,000</span>
+    <span>完済まで 約8ヶ月</span>
+  </div>
+
+  <div class="stats">
+    <div class="stat">
+      <p class="label">借入残高</p>
+      <p class="val red">¥312,000</p>
+    </div>
+    <div class="stat">
+      <p class="label">今月返済</p>
+      <p class="val teal">¥40,000</p>
+      <p class="sub-val">先月比 +5,000</p>
+    </div>
+  </div>
+
+  <!-- ===== SPENDING ===== -->
+  <p class="sec-label">SPENDING</p>
+
+  <div class="prog-card">
+    <div class="prog-header">
+      <span class="label">今月の支出（予算 ¥80,000）</span>
+      <span class="pct" style="color:#e2554e">60%</span>
+    </div>
+    <div class="prog-bar">
+      <div class="prog-fill" style="width:60%;background:linear-gradient(90deg,#c1272d,#e2554e)"></div>
+    </div>
+  </div>
+
+  <div class="stats">
+    <div class="stat">
+      <p class="label">7月前半 支出</p>
+      <p class="val">¥48,200</p>
+    </div>
+    <div class="stat">
+      <p class="label">1日あたり平均</p>
+      <p class="val">¥6,886</p>
+      <p class="sub-val">残り18日 → 1日 ¥1,767</p>
+    </div>
+  </div>
+
+  <!-- category breakdown -->
+  <div class="prog-card" style="margin-top:10px">
+    <div class="prog-header">
+      <span class="label">カテゴリ内訳</span>
+    </div>
+    <div class="cat-list">
+      <div class="cat-row">
+        <span class="cat-dot" style="background:#e2776e"></span>
+        <span class="cat-name">食費</span>
+        <span class="cat-tag consume">消費</span>
+        <span class="cat-amt">¥14,800</span>
+      </div>
+      <div class="cat-row">
+        <span class="cat-dot" style="background:rgba(180,195,230,.7)"></span>
+        <span class="cat-name">交通費</span>
+        <span class="cat-tag invest">投資</span>
+        <span class="cat-amt">¥6,200</span>
+      </div>
+      <div class="cat-row">
+        <span class="cat-dot" style="background:#e8c777"></span>
+        <span class="cat-name">交際費</span>
+        <span class="cat-tag invest">投資</span>
+        <span class="cat-amt">¥8,400</span>
+      </div>
+      <div class="cat-row">
+        <span class="cat-dot" style="background:rgba(150,160,180,.5)"></span>
+        <span class="cat-name">雑費</span>
+        <span class="cat-tag waste">浪費</span>
+        <span class="cat-amt">¥9,000</span>
+      </div>
+      <div class="cat-row">
+        <span class="cat-dot" style="background:#5dcaa5"></span>
+        <span class="cat-name">日用品</span>
+        <span class="cat-tag consume">消費</span>
+        <span class="cat-amt">¥5,200</span>
+      </div>
+      <div class="cat-row">
+        <span class="cat-dot" style="background:rgba(180,160,220,.6)"></span>
+        <span class="cat-name">娯楽</span>
+        <span class="cat-tag waste">浪費</span>
+        <span class="cat-amt">¥4,600</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3-split ratio -->
+  <div class="prog-card">
+    <div class="prog-header">
+      <span class="label">投資 / 消費 / 浪費</span>
+    </div>
+    <div style="display:flex;height:10px;border-radius:5px;overflow:hidden;margin-bottom:8px">
+      <div style="width:30%;background:#5dcaa5"></div>
+      <div style="width:42%;background:rgba(180,195,230,.6)"></div>
+      <div style="width:28%;background:#e2554e"></div>
+    </div>
+    <div style="display:flex;justify-content:space-between;font-size:11px">
+      <span style="color:#5dcaa5">投資 30%</span>
+      <span style="color:rgba(180,195,230,.7)">消費 42%</span>
+      <span style="color:#e2554e">浪費 28%</span>
+    </div>
+  </div>
+
+  <!-- ===== RICEWORK ===== -->
+  <p class="sec-label">RICEWORK</p>
+  <div class="rice-card">
+    <h3>Ricework</h3>
+    <p class="rice-sub">東京陸送（株）JU千葉</p>
+    <div class="rice-stats">
+      <div class="rice-stat">
+        <p class="r-val">5</p>
+        <p class="r-label">出勤日数</p>
+      </div>
+      <div class="rice-stat">
+        <p class="r-val">2h</p>
+        <p class="r-label">残業</p>
+      </div>
+      <div class="rice-stat">
+        <p class="r-val">¥52,540</p>
+        <p class="r-label">確定分</p>
+      </div>
+    </div>
+    <div class="rice-prog">
+      <div class="prog-header">
+        <span class="label">今月予想給与</span>
+        <span class="pct" style="color:rgba(180,195,230,.85)">¥211,580</span>
+      </div>
+      <div class="prog-bar">
+        <div class="prog-fill" style="width:25%;background:linear-gradient(90deg,rgba(130,155,210,.6),rgba(180,195,230,.8))"></div>
+      </div>
+      <p style="font-size:10px;color:rgba(150,170,220,.45);margin-top:6px;text-align:right">残り16日 × ¥9,940</p>
+    </div>
+  </div>
+
+  <!-- ===== INCOME ===== -->
+  <p class="sec-label">INCOME TARGET</p>
+  <div class="income-card">
+    <h3>¥500,000</h3>
+    <div class="income-gauge">
+      <svg viewBox="0 0 220 125" width="200" height="115">
+        <path d="M 18 110 A 92 92 0 0 1 202 110" fill="none" stroke="rgba(232,199,119,.1)" stroke-width="14" stroke-linecap="round"/>
+        <path d="M 18 110 A 92 92 0 0 0 32 72" fill="none" stroke="#e8c777" stroke-width="14" stroke-linecap="round">
+          <animate attributeName="d" from="M 18 110 A 92 92 0 0 1 18 110" to="M 18 110 A 92 92 0 0 0 32 72" dur="1.2s" fill="freeze" calcMode="spline" keySplines="0.2 0.7 0.2 1"/>
+        </path>
+        <text x="110" y="88" text-anchor="middle" font-size="32" fill="#e8c777" font-weight="600">8%</text>
+        <text x="110" y="108" text-anchor="middle" font-size="11" fill="rgba(232,199,119,.55)">月間インカム</text>
+      </svg>
+    </div>
+    <div class="income-sources">
+      <div class="inc-row">
+        <span class="src">Ricework（アルバイト）</span>
+        <span class="amt">¥211,580</span>
+      </div>
+      <div class="inc-row">
+        <span class="src">LINK / おつなぎ屋</span>
+        <span class="amt">¥12,000</span>
+      </div>
+      <div class="inc-row">
+        <span class="src">ゼロちゃん社</span>
+        <span class="amt">¥12,740</span>
+      </div>
+      <div class="inc-row">
+        <span class="src">BUKATSU</span>
+        <span class="amt">¥8,200</span>
+      </div>
+      <div class="inc-row">
+        <span class="src">Perro Mouton</span>
+        <span class="amt">¥0</span>
+      </div>
+      <div class="inc-row" style="border:none;padding-top:12px">
+        <span class="src" style="font-weight:500;color:#f0ead9">合計</span>
+        <span class="amt" style="font-size:16px">¥244,520</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== REPAYMENT CHART ===== -->
+  <p class="sec-label">REPAYMENT TREND</p>
+  <div class="chart-card">
+    <h3>借入残高の推移</h3>
+    <svg viewBox="0 0 380 180" style="width:100%;height:auto;display:block">
+      <line x1="40" y1="20" x2="40" y2="150" stroke="rgba(255,255,255,.06)" stroke-width="0.5"/>
+      <line x1="40" y1="150" x2="370" y2="150" stroke="rgba(255,255,255,.06)" stroke-width="0.5"/>
+      <text x="36" y="28" text-anchor="end" font-size="9" fill="rgba(180,190,210,.35)">¥820k</text>
+      <text x="36" y="90" text-anchor="end" font-size="9" fill="rgba(180,190,210,.35)">¥500k</text>
+      <text x="36" y="150" text-anchor="end" font-size="9" fill="rgba(180,190,210,.35)">¥0</text>
+      <text x="66" y="165" text-anchor="middle" font-size="9" fill="rgba(180,190,210,.35)">1月</text>
+      <text x="121" y="165" text-anchor="middle" font-size="9" fill="rgba(180,190,210,.35)">2月</text>
+      <text x="176" y="165" text-anchor="middle" font-size="9" fill="rgba(180,190,210,.35)">3月</text>
+      <text x="231" y="165" text-anchor="middle" font-size="9" fill="rgba(180,190,210,.35)">4月</text>
+      <text x="286" y="165" text-anchor="middle" font-size="9" fill="rgba(180,190,210,.35)">5月</text>
+      <text x="341" y="165" text-anchor="middle" font-size="9" fill="rgba(180,190,210,.35)">6月</text>
+      <defs>
+        <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#c1272d" stop-opacity="0.25"/>
+          <stop offset="100%" stop-color="#c1272d" stop-opacity="0"/>
+        </linearGradient>
+      </defs>
+      <path d="M 66,24 L 121,48 L 176,68 L 231,88 L 286,108 L 341,120 L 341,150 L 66,150 Z" fill="url(#areaGrad)"/>
+      <polyline points="66,24 121,48 176,68 231,88 286,108 341,120" fill="none" stroke="#c1272d" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+      <circle cx="341" cy="120" r="4" fill="#c1272d"/>
+      <text x="348" y="117" font-size="10" fill="#e2554e">¥312k</text>
+    </svg>
+  </div>
+
+  <!-- ===== AI REPORT ===== -->
+  <p class="sec-label">AI REPORT</p>
+  <div class="report">
+    <h3>7月前半レポート</h3>
+
+    <div class="report-section">
+      <p class="r-icon strict">STRICT VIEW</p>
+      <p>雑費¥9,000は前回比+2,800円で浪費比率28%。自覚のない出費が積もってきてる。交際費は投資に分類しているが「本当に全額が将来に繋がるか?」は半月ごとに振り返る必要あり。このままのペースだと月間予算を¥8,400超過する見込み。</p>
+    </div>
+
+    <div class="report-section">
+      <p class="r-icon coach">COACH VIEW</p>
+      <p>返済ペースは順調、先月より¥5,000多く返せている。交通費が増えたのは行動量が増えた証拠。Riceworkも安定稼働で月収21万の土台がある。食費のコントロールは先月から確実に改善してる。この調子。</p>
+    </div>
+
+    <p class="report-date">2026/07/01 05:00 自動生成</p>
+  </div>
+
+  <div class="foot">
+    <a href="#top">↑ TOP</a>
+  </div>
+
+</div>
+
+<button class="gas-btn" onclick="setGasUrl()" title="GAS接続設定">⚙</button>
+<button class="fab" id="fab" onclick="toggleModal()">+</button>
+<div class="overlay" id="overlay" onclick="toggleModal()"></div>
+<div class="toast" id="toast">記録しました</div>
+
+<div class="modal" id="modal">
+  <h3>記録する</h3>
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('expense')">支出</button>
+    <button class="tab-btn" onclick="switchTab('income')">収入</button>
+    <button class="tab-btn" onclick="switchTab('debt')">借入/返済</button>
+    <button class="tab-btn" onclick="switchTab('rice')">Ricework</button>
+  </div>
+
+  <!-- 支出 -->
+  <div class="form-panel active" id="panel-expense">
+    <div class="field">
+      <label>日付</label>
+      <input type="date" id="ex-date">
+    </div>
+    <div class="field">
+      <label>金額（円）</label>
+      <input type="number" id="ex-amount" placeholder="1200">
+    </div>
+    <div class="field-row">
+      <div class="field">
+        <label>カテゴリ</label>
+        <select id="ex-cat">
+          <option>食費</option><option>交通費</option><option>雑費</option>
+          <option>日用品</option><option>交際費</option><option>娯楽</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>分類</label>
+        <select id="ex-class">
+          <option>消費</option><option>投資</option><option>浪費</option>
+        </select>
+      </div>
+    </div>
+    <div class="field">
+      <label>メモ</label>
+      <input type="text" id="ex-memo" placeholder="スタバ、移動中に">
+    </div>
+    <button class="submit-btn" onclick="submitForm('expense')">支出を記録</button>
+  </div>
+
+  <!-- 収入 -->
+  <div class="form-panel" id="panel-income">
+    <div class="field">
+      <label>日付</label>
+      <input type="date" id="in-date">
+    </div>
+    <div class="field">
+      <label>金額（円）</label>
+      <input type="number" id="in-amount" placeholder="85000">
+    </div>
+    <div class="field">
+      <label>ソース</label>
+      <select id="in-source">
+        <option>アルバイト（東京陸送）</option><option>LINK / おつなぎ屋</option>
+        <option>ゼロちゃん社</option><option>BUKATSU</option>
+        <option>Perro Mouton</option><option>その他</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>メモ</label>
+      <input type="text" id="in-memo" placeholder="7月前半分">
+    </div>
+    <button class="submit-btn" onclick="submitForm('income')">収入を記録</button>
+  </div>
+
+  <!-- 借入/返済 -->
+  <div class="form-panel" id="panel-debt">
+    <div class="field">
+      <label>日付</label>
+      <input type="date" id="db-date">
+    </div>
+    <div class="field-row">
+      <div class="field">
+        <label>種別</label>
+        <select id="db-type">
+          <option>返済</option><option>借入</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>金額（円）</label>
+        <input type="number" id="db-amount" placeholder="30000">
+      </div>
+    </div>
+    <div class="field">
+      <label>相手</label>
+      <input type="text" id="db-target" placeholder="◯◯さん / カード / ローン">
+    </div>
+    <div class="field">
+      <label>メモ</label>
+      <input type="text" id="db-memo" placeholder="7月分返済">
+    </div>
+    <button class="submit-btn" onclick="submitForm('debt')">借入/返済を記録</button>
+  </div>
+
+  <!-- Ricework -->
+  <div class="form-panel" id="panel-rice">
+    <div class="field">
+      <label>日付</label>
+      <input type="date" id="rc-date">
+    </div>
+    <div class="field-row">
+      <div class="field">
+        <label>開始</label>
+        <input type="time" id="rc-start" value="09:00">
+      </div>
+      <div class="field">
+        <label>終了</label>
+        <input type="time" id="rc-end" value="17:00">
+      </div>
+    </div>
+    <div class="field">
+      <label>メモ（残業等）</label>
+      <input type="text" id="rc-memo" placeholder="残業1h">
+    </div>
+    <button class="submit-btn" onclick="submitForm('rice')">勤怠を記録</button>
+  </div>
+</div>
+
+<script>
+var today = new Date().toISOString().split('T')[0];
+document.querySelectorAll('input[type="date"]').forEach(function(el){ el.value = today; });
+
+function toggleModal(){
+  var m = document.getElementById('modal');
+  var o = document.getElementById('overlay');
+  var f = document.getElementById('fab');
+  var show = !m.classList.contains('show');
+  m.classList.toggle('show', show);
+  o.classList.toggle('show', show);
+  f.classList.toggle('open', show);
+}
+
+function switchTab(name){
+  document.querySelectorAll('.tab-btn').forEach(function(b){ b.classList.remove('active'); });
+  document.querySelectorAll('.form-panel').forEach(function(p){ p.classList.remove('active'); });
+  event.currentTarget.classList.add('active');
+  document.getElementById('panel-'+name).classList.add('active');
+}
+
+/* GAS エンドポイント（デプロイ後にここを書き換え） */
+var GAS_URL = localStorage.getItem('my_mouton_gas_url') || '';
+
+function submitForm(type){
+  var payload = { action: '' };
+
+  if(type === 'expense'){
+    payload.action = 'addExpense';
+    payload.date   = document.getElementById('ex-date').value;
+    payload.amount = document.getElementById('ex-amount').value;
+    payload.category = document.getElementById('ex-cat').value;
+    payload.classification = document.getElementById('ex-class').value;
+    payload.memo   = document.getElementById('ex-memo').value;
+  } else if(type === 'income'){
+    payload.action = 'addIncome';
+    payload.date   = document.getElementById('in-date').value;
+    payload.amount = document.getElementById('in-amount').value;
+    payload.source = document.getElementById('in-source').value;
+    payload.memo   = document.getElementById('in-memo').value;
+  } else if(type === 'debt'){
+    payload.action = 'addDebt';
+    payload.date   = document.getElementById('db-date').value;
+    payload.type   = document.getElementById('db-type').value;
+    payload.amount = document.getElementById('db-amount').value;
+    payload.target = document.getElementById('db-target').value;
+    payload.memo   = document.getElementById('db-memo').value;
+  } else if(type === 'rice'){
+    payload.action = 'addRicework';
+    payload.date   = document.getElementById('rc-date').value;
+    payload.start  = document.getElementById('rc-start').value;
+    payload.end    = document.getElementById('rc-end').value;
+    payload.memo   = document.getElementById('rc-memo').value;
+  }
+
+  /* GAS URLが未設定の場合はデモモード */
+  if(!GAS_URL){
+    showToast('⚠ GAS未接続（デモ保存）');
+    resetAndClose(type);
+    return;
+  }
+
+  fetch(GAS_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain' },
+    body: JSON.stringify(payload)
+  })
+  .then(function(r){ return r.json(); })
+  .then(function(res){
+    if(res.ok){ showToast('✅ 記録しました'); }
+    else { showToast('❌ エラー: ' + res.error); }
+  })
+  .catch(function(){ showToast('❌ 送信失敗'); });
+
+  resetAndClose(type);
+}
+
+function showToast(msg){
+  var toast = document.getElementById('toast');
+  toast.textContent = msg;
+  toast.classList.add('show');
+  setTimeout(function(){ toast.classList.remove('show'); }, 2200);
+}
+
+function resetAndClose(type){
+  toggleModal();
+  var panel = document.getElementById('panel-'+type);
+  panel.querySelectorAll('input[type="number"], input[type="text"]').forEach(function(el){ el.value=''; });
+  panel.querySelectorAll('input[type="date"]').forEach(function(el){ el.value=today; });
+}
+
+/* GAS URLをその場で設定できるUI */
+function setGasUrl(){
+  var url = prompt('GASのデプロイURLを入力してください:', GAS_URL);
+  if(url !== null){
+    GAS_URL = url;
+    localStorage.setItem('my_mouton_gas_url', url);
+    showToast(url ? '✅ GAS接続設定完了' : '🔌 GAS未接続モード');
+  }
+}
+</script>
+</body></html>

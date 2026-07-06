@@ -1,0 +1,833 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>ISAI Mouton OFFICE</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;user-select:none}
+html,body{height:100%;overflow:hidden;background:#0d0c0a;font-family:'Courier New',monospace;touch-action:none;overscroll-behavior:none}
+#game{display:block;width:100vw;height:100vh;image-rendering:pixelated;image-rendering:crisp-edges}
+
+/* ── TITLE ── */
+#title{position:fixed;inset:0;z-index:100;background:radial-gradient(ellipse at 50% 30%,#2a2418,#0d0c0a 75%);display:flex;flex-direction:column;align-items:center;justify-content:center;color:#f0e6d0}
+#title .logo{font-size:clamp(24px,7vw,44px);font-weight:900;letter-spacing:2px;color:#f0a832;text-shadow:3px 3px 0 #7a2a08,6px 6px 0 rgba(0,0,0,.4);animation:logoFloat 2.4s ease-in-out infinite}
+@keyframes logoFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+#title .sub{font-size:11px;color:#cfc8ba;letter-spacing:4px;margin-top:10px}
+#title .start{position:absolute;bottom:14%;font-size:12px;animation:blink2 1.1s steps(2) infinite;letter-spacing:2px}
+@keyframes blink2{50%{opacity:.15}}
+
+/* ── SKIP ── */
+#skipBtn{position:fixed;top:calc(env(safe-area-inset-top) + 12px);right:14px;z-index:110;background:rgba(26,23,18,.8);color:#cfc8ba;border:2px solid #4a443a;font-size:11px;font-family:inherit;padding:7px 14px;border-radius:4px;display:none;letter-spacing:1px}
+#skipBtn.show{display:block}
+
+/* ── OPENING CAPTION ── */
+#opCap{position:fixed;left:0;right:0;bottom:16%;z-index:105;text-align:center;color:#f0e6d0;font-size:clamp(12px,3.4vw,16px);letter-spacing:1px;text-shadow:2px 2px 0 rgba(0,0,0,.6);display:none;line-height:1.9;padding:0 8vw}
+
+#fade{position:fixed;inset:0;background:#0d0c0a;z-index:90;opacity:0;pointer-events:none;transition:opacity .45s}
+#fade.on{opacity:1;pointer-events:all}
+#flash{position:fixed;inset:0;background:#fff;z-index:95;opacity:0;pointer-events:none;transition:opacity .2s}
+#flash.on{opacity:.9}
+
+/* ── HUD ── */
+#hud{position:fixed;top:0;left:0;right:0;display:flex;align-items:center;justify-content:space-between;padding:calc(env(safe-area-inset-top) + 8px) 12px 8px;pointer-events:none;z-index:10}
+#hud .ttl{background:#1a1712;color:#f0a832;border:2px solid #f0a832;font-size:11px;font-weight:bold;padding:4px 10px;letter-spacing:1px;box-shadow:2px 2px 0 rgba(0,0,0,.4)}
+#hqLink{pointer-events:all;background:rgba(26,23,18,.9);color:#cfc8ba;border:2px solid #4a443a;font-size:10px;padding:5px 10px;box-shadow:2px 2px 0 rgba(0,0,0,.4);text-decoration:none;font-family:inherit}
+
+/* ── DIALOG ── */
+#dlg{position:fixed;left:50%;bottom:110px;transform:translateX(-50%);width:min(92vw,520px);background:#1a1712;border:3px solid #f0e6d0;border-radius:4px;box-shadow:0 0 0 3px #1a1712,4px 6px 0 rgba(0,0,0,.5);padding:12px 14px;z-index:20;display:none;color:#f0e6d0}
+#dlg.show{display:block;animation:pop .12s steps(2)}
+@keyframes pop{from{transform:translateX(-50%) scale(.92)}}
+#dlg .nm{font-size:11px;font-weight:bold;color:#f0a832;margin-bottom:6px;letter-spacing:1px}
+#dlg .tx{font-size:13px;line-height:1.7;white-space:pre-wrap}
+#dlg .nx{position:absolute;right:10px;bottom:6px;font-size:10px;color:#8a8272;animation:blink 1s steps(2) infinite}
+@keyframes blink{50%{opacity:0}}
+
+/* ── FLOOR SELECT ── */
+#fsel{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);width:min(88vw,340px);background:#1a1712;border:3px solid #f0e6d0;border-radius:4px;box-shadow:0 0 0 3px #1a1712,4px 6px 0 rgba(0,0,0,.5);z-index:25;display:none;color:#f0e6d0}
+#fsel.show{display:block}
+#fsel .h{padding:10px 14px;font-size:11px;color:#f0a832;font-weight:bold;border-bottom:2px solid #3a352c;letter-spacing:1px}
+#fsel .it{padding:11px 14px;font-size:13px;border-bottom:1px solid #2e2a22;display:flex;justify-content:space-between}
+#fsel .it:last-child{border-bottom:none}
+#fsel .it.off{color:#6a6152}
+#fsel .it .tag{font-size:9px;color:#8a8272}
+#fsel .cl{text-align:center;padding:9px;font-size:10px;color:#8a8272}
+
+/* ── PAD ── */
+#pad{position:fixed;left:14px;bottom:calc(env(safe-area-inset-bottom) + 18px);width:132px;height:132px;z-index:15}
+.pk{position:absolute;width:44px;height:44px;background:#3a352c;border:2px solid #6a6152;border-radius:8px;color:#cfc8ba;font-size:16px;display:flex;align-items:center;justify-content:center;box-shadow:0 3px 0 #1a1712}
+.pk:active,.pk.on{background:#f0a832;color:#1a1712;transform:translateY(2px);box-shadow:0 1px 0 #1a1712}
+#pU{left:44px;top:0}#pD{left:44px;top:88px}#pL{left:0;top:44px}#pR{left:88px;top:44px}
+#btnA{position:fixed;right:20px;bottom:calc(env(safe-area-inset-bottom) + 36px);width:64px;height:64px;border-radius:50%;background:#c2410c;border:3px solid #f0a832;color:#fff;font-size:18px;font-weight:bold;font-family:inherit;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 0 #7a2a08;z-index:15}
+#btnA:active{transform:translateY(3px);box-shadow:0 1px 0 #7a2a08}
+@media(min-width:900px) and (hover:hover){#pad,#btnA{opacity:.35}}
+#sync{position:fixed;bottom:calc(env(safe-area-inset-bottom) + 6px);left:50%;transform:translateX(-50%);font-size:9px;color:#6a6152;z-index:9}
+</style>
+</head>
+<body>
+
+<div id="title">
+  <div class="logo">ISAI MOUTON</div>
+  <div class="sub">O F F I C E</div>
+  <div class="start">タップ / Ⓐ で出社する</div>
+</div>
+
+<button id="skipBtn">SKIP ▶▶</button>
+<div id="opCap"></div>
+<div id="fade"></div>
+<div id="flash"></div>
+
+<canvas id="game"></canvas>
+
+<div id="hud">
+  <div class="ttl" id="floorTtl">1F ロビー</div>
+  <a id="hqLink" href="isai_mouton_hq_app.html">📱 司令室へ</a>
+</div>
+
+<div id="dlg"><div class="nm" id="dNm"></div><div class="tx" id="dTx"></div><div class="nx">▼ Ⓐ</div></div>
+
+<div id="fsel">
+  <div class="h">▲▼ エレベーター ── 行き先</div>
+  <div id="fselList"></div>
+  <div class="cl">タップで移動 / Ⓐで閉じる</div>
+</div>
+
+<div id="pad">
+  <div class="pk" id="pU">▲</div>
+  <div class="pk" id="pL">◀</div>
+  <div class="pk" id="pR">▶</div>
+  <div class="pk" id="pD">▼</div>
+</div>
+<div id="btnA">A</div>
+<div id="sync" id="syncLbl"></div>
+
+<script>
+/* ════════════════════════════════════════
+   ISAI Mouton OFFICE v3
+   - DP風スプライト / ビル&エレベーター / 受付&LEDビジョン
+   - オープニング(走って出社・スキップ可)
+   - 司令室(HQアプリ)とデータ共有: localStorage 'isai_hq_endpoint'
+   ════════════════════════════════════════ */
+const T=16;
+const cv=document.getElementById('game'),cx=cv.getContext('2d');
+let Z=3;
+
+/* ── shared endpoint with HQ app ── */
+const LS_KEY='isai_hq_endpoint';
+function getEndpoint(){try{return localStorage.getItem(LS_KEY)||''}catch(e){return ''}}
+
+/* ════════ FLOORS ════════ */
+/* elevator: always top-right. door occupies wall tiles (w-4..w-3, y=0), stand zone below */
+function elevOf(f){return {x:f.w-4,y:1}}
+const FLOORS=[
+ {id:'lobby',nm:'1F ロビー', c:'#e9e4d8', on:true, w:16,h:11,
+  desks:[], plants:[{x:2,y:8},{x:13,y:8}],
+  recep:{x:6,y:3}, led:{x:2,y:0,w:6},
+  npcs:[
+   {id:'recep',nm:'ミサキ',role:'受付・レセプション',pal:'recep',desk:{x:6,y:3},fixed:true,
+    lines:['ようこそ、ISAI Moutonへ。','エレベーターは右上です。','掲示板に本日のタスク状況が出ています。']},
+  ]},
+ {id:'hq', nm:'2F 本社', c:'#efe7d8', on:true, w:16,h:11,
+  desks:[{x:4,y:3},{x:9,y:3}], plants:[{x:2,y:8}], board:{x:7,y:8},
+  npcs:[
+   {id:'croppy',nm:'クロッピー',role:'COO / 戦略統括',pal:'croppy',desk:{x:4,y:3},
+    lines:['社長、おかえりなさい。全社KPI異常なし。','「60点で出せ」── 完璧は後です。','今日の最優先はLINKのDM返信2件です。']},
+   {id:'sec',nm:'秘書',role:'案内・タスク整理',pal:'sec',desk:{x:9,y:3},
+    lines:['次のタスク：Threads投稿①の承認です。','note原稿の締切、明日ですよ。','掲示板で今日の数字が見られます。']},
+  ]},
+ {id:'link', nm:'3F LINK社', c:'#f6e2cb', on:true, w:18,h:11,
+  desks:[{x:3,y:3},{x:8,y:3},{x:13,y:3}], plants:[{x:2,y:8}],
+  npcs:[
+   {id:'tsumg',nm:'ツムギ',role:'Threads運用',pal:'tsumg',desk:{x:3,y:3},
+    lines:['共感ポスト、仕込み中です…','フック3案できました。見ます？','投稿①、承認待ちです！']},
+   {id:'tng',nm:'ツナグ',role:'DM・アウトリーチ',pal:'tng',desk:{x:8,y:3},
+    lines:['DM返信、残り2件です。','新規フォロワーへのお礼、完了。','見込み客リスト、更新しました。']},
+   {id:'mil',nm:'ミル',role:'分析（兼任）',pal:'mil',desk:{x:13,y:3},
+    lines:['昨日のインプ、前日比+12%です。','保存率の高い投稿を見つけました。','数値記録、完了です。']},
+  ]},
+ {id:'zero', nm:'4F ゼロちゃん社', c:'#f7e6e0', on:true, w:16,h:11,
+  desks:[{x:4,y:3},{x:9,y:3}], plants:[{x:2,y:8}],
+  npcs:[
+   {id:'zero',nm:'ゼロちゃん',role:'編集長 / SNS',pal:'zero',desk:{x:4,y:3},
+    lines:['AI社員として今日も出社です✦','フォロワーさんへの返信、完了！','有料note、もうすぐ公開ですよ〜']},
+   {id:'kak',nm:'カケル',role:'note執筆',pal:'kak',desk:{x:9,y:3},
+    lines:['第3章、520字追加しました。','図解を1枚つくってます…','誤字チェック2周目、完了。']},
+  ]},
+ {id:'bk', nm:'5F BUKATSU社', c:'#e2efdd', on:false, tag:'9月稼働', w:16,h:11,
+  desks:[{x:4,y:3},{x:9,y:3}], plants:[{x:2,y:8}],
+  npcs:[
+   {id:'sapo',nm:'サポ',role:'コミュニティ運営',pal:'mb',desk:{x:4,y:3},slp:true,lines:['……（9月の稼働に備えて待機中）']},
+   {id:'coach',nm:'コーチ',role:'プログラム設計',pal:'mb2',desk:{x:9,y:3},slp:true,lines:['……（プログラム構想を温めている）']},
+  ]},
+ {id:'pm', nm:'6F Perro Mouton', c:'#dcdce0', on:false, tag:'待機中', w:16,h:11,
+  desks:[{x:4,y:3},{x:9,y:3}], plants:[{x:2,y:8}],
+  npcs:[
+   {id:'lens',nm:'レンズ',role:'撮影ディレクション',pal:'blk',desk:{x:4,y:3},slp:true,lines:['……（次の撮影案件を待っている）']},
+   {id:'edit',nm:'エディト',role:'編集・納品',pal:'blk2',desk:{x:9,y:3},slp:true,lines:['……（素材が来たら即編集します）']},
+  ]},
+];
+
+/* ════════ PALETTES ════════
+   sk=skin, hr=hair, hi=hair highlight, sh=shirt, s2=shirt shade, pt=pants, cap=帽子(optional) */
+const PAL={
+ player:{sk:'#f6cfa4',hr:'#2b241c',hi:'#4a3c2c',sh:'#d94f2a',s2:'#a83318',pt:'#2c3a56',cap:'#c2410c',capHi:'#e8653a'},
+ recep: {sk:'#f8d6b0',hr:'#3a2c22',hi:'#5c4634',sh:'#f4f1ea',s2:'#d8d2c4',pt:'#404a5e'},
+ croppy:{sk:'#f6cfa4',hr:'#4a3520',hi:'#6a4e30',sh:'#e08214',s2:'#b05e04',pt:'#33302a'},
+ sec:   {sk:'#f6cfa4',hr:'#241f1c',hi:'#403630',sh:'#37507e',s2:'#24365c',pt:'#282e3c'},
+ tsumg: {sk:'#f8d6b0',hr:'#5c3020',hi:'#7e4a32',sh:'#ea7a5e',s2:'#c45238',pt:'#5e3428'},
+ tng:   {sk:'#eab88c',hr:'#20201e',hi:'#3a3a36',sh:'#42b8a6',s2:'#2a8a7a',pt:'#24443c'},
+ mil:   {sk:'#f6cfa4',hr:'#463020',hi:'#664a32',sh:'#7478f4',s2:'#5054d0',pt:'#2c2a6c'},
+ zero:  {sk:'#fdf3e6',hr:'#f0e4cc',hi:'#fff8ea',sh:'#f8efe0',s2:'#dccfb8',pt:'#b08484'},
+ kak:   {sk:'#f6cfa4',hr:'#2c1640',hi:'#48286a',sh:'#a44ef2',s2:'#7e2ecc',pt:'#402058'},
+ mb:    {sk:'#f6cfa4',hr:'#243620',hi:'#3c5434',sh:'#48b862',s2:'#2e8a44',pt:'#1e402a'},
+ mb2:   {sk:'#eab88c',hr:'#1c2a1a',hi:'#324a2e',sh:'#3aa053',s2:'#26783c',pt:'#1a3824'},
+ blk:   {sk:'#eab88c',hr:'#141414',hi:'#2e2e2e',sh:'#464646',s2:'#2a2a2a',pt:'#141414'},
+ blk2:  {sk:'#f6cfa4',hr:'#1a1a1a',hi:'#343434',sh:'#3a3a42',s2:'#22222a',pt:'#101014'},
+};
+
+/* ════════ DP-STYLE SPRITES 14x18 ════════
+   o=outline h=hair H=hair-hi f=skin e=eye w=eye-white m=mouth
+   s=shirt 2=shirt-shade p=pants x=shoe c=cap C=cap-hi */
+const SPR={
+ down:[
+"....oooooo....",
+"...ohhhhhho...",
+"..ohHhhhhHho..",
+"..ohhhhhhhho..",
+"..ohhhhhhhho..",
+"..ohffffffho..",
+"..offweewffo..",
+"..offffffffo..",
+"...offmmffo...",
+"....offffo....",
+"...oossssoo...",
+"..os2ssssss2o.",
+"..osossssoso..",
+"..ofos22sofo..",
+"...oss22sso...",
+"...opppppo....",
+"...opo..opo...",
+"...oxo..oxo...",
+ ],
+ up:[
+"....oooooo....",
+"...ohhhhhho...",
+"..ohhhhhhhho..",
+"..ohHhhhhHho..",
+"..ohhhhhhhho..",
+"..ohhhhhhhho..",
+"..ohhhhhhhho..",
+"..ohhhhhhhho..",
+"...ohhhhhho...",
+"....ohhho.....",
+"...oossssoo...",
+"..os2ssssss2o.",
+"..osossssoso..",
+"..ofos22sofo..",
+"...oss22sso...",
+"...opppppo....",
+"...opo..opo...",
+"...oxo..oxo...",
+ ],
+ side:[
+".....ooooo....",
+"....ohhhhho...",
+"...ohhhhhhho..",
+"...ohHhhhhho..",
+"...ohhhhhhho..",
+"...ohhffffoo..",
+"...ohfwefff...",
+"...ohffffffo..",
+"....offmffo...",
+".....offfo....",
+"....osssso....",
+"...os2ssssoo..",
+"...ososssofo..",
+"...ofos22so...",
+"....oss2so....",
+"....opppo.....",
+"....opo.opo...",
+"....oxo.oxo...",
+ ],
+};
+/* player cap rows (down): replace hair top with cap */
+const CAP_DOWN=[
+"....oooooo....",
+"...occccccо...",
+"..ocCccccCco..",
+"..occcccccco..",
+"..ohhhhhhhho..",
+];
+function applyCap(rows){
+ const r=rows.slice();
+ r[0]="....oooooo....";
+ r[1]="...occcccco...";
+ r[2]="..ocCccccCco..";
+ r[3]="..occcccccco..";
+ return r;
+}
+function legsSwap(rows){
+ const r=rows.slice();
+ const a=r[16],b=r[17];
+ // stride: 左右の脚を前後に
+ r[16]=a.replace(/opo(\s*|\.*)opo/,'opo..opo');
+ // simple offset walk frame
+ r[16]="..opo....opo..".slice(0,14);
+ r[17]="..oxo....oxo..".slice(0,14);
+ return r;
+}
+function sitRows(rows){
+ // 上半身のみ + 椅子
+ const r=rows.slice(0,15);
+ r.push("...oPPPPPPo...");
+ r.push("....oPPPPo....");
+ r.push("..............");
+ return r;
+}
+
+function drawSprite(kind,frame,px,py,scale,palKey,flip,alpha,sitting,hasCap){
+ const pal=PAL[palKey]||PAL.player;
+ const map={
+  o:'#181410',h:pal.hr,H:pal.hi,f:pal.sk,e:'#181410',w:'#f8f6f0',m:'#b06848',
+  s:pal.sh,'2':pal.s2,p:pal.pt,x:'#241e18',c:pal.cap||pal.hr,C:pal.capHi||pal.hi,P:'#6a5238'
+ };
+ let rows=SPR[kind]||SPR.down;
+ if(hasCap&&kind==='down')rows=applyCap(rows);
+ if(sitting)rows=sitRows(rows);
+ else if(frame===1)rows=legsSwap(rows);
+ cx.save();
+ cx.translate(px,py);
+ if(flip){cx.translate(14*scale,0);cx.scale(-1,1)}
+ cx.globalAlpha=alpha;
+ for(let r=0;r<rows.length;r++){
+  const row=rows[r];
+  for(let c=0;c<row.length;c++){
+   const ch=row[c];if(ch==='.'||ch===' ')continue;
+   cx.fillStyle=map[ch]||'#000';
+   cx.fillRect(Math.round(c*scale),Math.round(r*scale),Math.ceil(scale),Math.ceil(scale));
+  }
+ }
+ cx.restore();
+ cx.globalAlpha=1;
+}
+
+/* ════════ STATE ════════ */
+let phase='title'; // title -> opening -> play
+let floorIdx=0;
+function F(){return FLOORS[floorIdx]}
+const solid=new Set();
+function K(x,y){return x+','+y}
+function buildSolid(){
+ solid.clear();
+ const f=F();
+ for(let x=0;x<f.w;x++){solid.add(K(x,0));solid.add(K(x,f.h-1))}
+ for(let y=0;y<f.h;y++){solid.add(K(0,y));solid.add(K(f.w-1,y))}
+ (f.desks||[]).forEach(d=>{solid.add(K(d.x,d.y));solid.add(K(d.x+1,d.y))});
+ (f.plants||[]).forEach(p=>solid.add(K(p.x,p.y)));
+ if(f.board)solid.add(K(f.board.x,f.board.y));
+ if(f.recep){solid.add(K(f.recep.x,f.recep.y));solid.add(K(f.recep.x+1,f.recep.y));solid.add(K(f.recep.x+2,f.recep.y))}
+}
+function blocked(x,y){return solid.has(K(Math.floor(x),Math.floor(y)))}
+
+const player={x:8,y:8,mv:false,fr:0,dir:'u'};
+const SPD=4.0;
+
+/* ════════ LIVE DATA (shared w/ HQ app) ════════ */
+let LIVE=null; // {staff:[...], tasks:[...], nextActions:[...], loop:[...]}
+const DEMO_STATUS={croppy:'作業中',sec:'作業中',tsumg:'作業中',tng:'報告あり',mil:'作業中',zero:'作業中',kak:'作業中',sapo:'待機',coach:'待機',lens:'待機',edit:'待機'};
+async function syncData(){
+ const ep=getEndpoint();
+ const lbl=document.getElementById('sync');
+ if(!ep){LIVE=null;applyStatuses();lbl.textContent='デモ稼働（司令室⚙で接続すると実データ連動）';return}
+ try{
+  const res=await fetch(ep+(ep.includes('?')?'&':'?')+'action=getAll',{cache:'no-store'});
+  const j=await res.json();
+  if(j.ok){LIVE=j.data;applyStatuses();lbl.textContent='実データ連動中 ('+new Date().toLocaleTimeString('ja-JP')+')'}
+  else throw new Error(j.error);
+ }catch(e){lbl.textContent='接続エラー・デモ稼働中';LIVE=null;applyStatuses()}
+}
+function statusOf(id){
+ if(LIVE&&LIVE.staff){
+  const s=LIVE.staff.find(r=>r.staff_id===id);
+  if(s)return {st:s.ステータス||'作業中',now:s.現在の作業||''};
+ }
+ return {st:DEMO_STATUS[id]||'作業中',now:''};
+}
+function taskStats(){
+ if(LIVE&&LIVE.tasks){
+  const t=LIVE.tasks;
+  return {run:t.filter(x=>x.状態==='進行中').length,done:t.filter(x=>x.状態==='完了').length};
+ }
+ return {run:4,done:3};
+}
+function reportCount(){
+ let c=0;
+ FLOORS.forEach(f=>f.npcs.forEach(n=>{if(statusOf(n.id).st==='報告あり')c++}));
+ return c;
+}
+function applyStatuses(){
+ FLOORS.forEach(f=>f.npcs.forEach(n=>{
+  if(n.fixed)return; // 受付は常勤
+  const {st}=statusOf(n.id);
+  n.liveStatus=st;
+ }));
+}
+setInterval(syncData,60000);
+syncData();
+
+/* ════════ FLOOR SPAWN ════════ */
+function spawnFloor(idx,fromElev){
+ floorIdx=idx;buildSolid();
+ const f=F();
+ document.getElementById('floorTtl').textContent=f.nm;
+ const e=elevOf(f);
+ if(fromElev){player.x=e.x+1;player.y=e.y+1.6;player.dir='d'}
+ f.npcs.forEach(n=>{
+  n.px=n.desk.x+1.5;n.py=n.desk.y+.7;n.tx=n.px;n.ty=n.py;
+  n.fr=0;n.bub='';n.bubT=0;n.dir='d';n.stateT=2+Math.random()*5;
+  const st=n.fixed?'作業中':(n.liveStatus||(n.slp?'待機':'作業中'));
+  n.mode=st==='待機'?'sleep':st==='報告あり'?'report':'work';
+ });
+}
+
+/* ════════ INPUT ════════ */
+const key={u:false,d:false,l:false,r:false};
+addEventListener('keydown',e=>{
+ if(['ArrowUp','w','W'].includes(e.key))key.u=true;
+ if(['ArrowDown','s','S'].includes(e.key))key.d=true;
+ if(['ArrowLeft','a','A'].includes(e.key))key.l=true;
+ if(['ArrowRight','d','D'].includes(e.key))key.r=true;
+ if([' ','Enter','z','Z'].includes(e.key)){handleA();e.preventDefault()}
+ if(e.key.startsWith('Arrow'))e.preventDefault();
+});
+addEventListener('keyup',e=>{
+ if(['ArrowUp','w','W'].includes(e.key))key.u=false;
+ if(['ArrowDown','s','S'].includes(e.key))key.d=false;
+ if(['ArrowLeft','a','A'].includes(e.key))key.l=false;
+ if(['ArrowRight','d','D'].includes(e.key))key.r=false;
+});
+function bindPad(id,k){
+ const el=document.getElementById(id);
+ const on=e=>{e.preventDefault();key[k]=true;el.classList.add('on')};
+ const off=e=>{e.preventDefault();key[k]=false;el.classList.remove('on')};
+ el.addEventListener('pointerdown',on);el.addEventListener('pointerup',off);
+ el.addEventListener('pointerleave',off);el.addEventListener('pointercancel',off);
+}
+bindPad('pU','u');bindPad('pD','d');bindPad('pL','l');bindPad('pR','r');
+document.getElementById('btnA').addEventListener('pointerdown',e=>{e.preventDefault();handleA()});
+
+/* ════════ OPENING (running to the building) ════════ */
+const opCap=document.getElementById('opCap'),skipBtn=document.getElementById('skipBtn');
+const fadeEl=document.getElementById('fade'),flashEl=document.getElementById('flash');
+let opT=0; // opening time (sec)
+const OP_LEN=7.5;
+const CAPS=[
+ [0.3,'柏の朝。'],
+ [2.0,'今日も、会社は動いている──'],
+ [4.2,'AI社員たちが待つビルへ。'],
+];
+function startOpening(){
+ phase='opening';opT=0;
+ document.getElementById('title').style.display='none';
+ skipBtn.classList.add('show');
+ opCap.style.display='block';opCap.textContent='';
+}
+function endOpening(){
+ skipBtn.classList.remove('show');
+ opCap.style.display='none';
+ flashEl.classList.add('on');
+ setTimeout(()=>{
+  flashEl.classList.remove('on');
+  fadeEl.classList.add('on');
+  setTimeout(()=>{
+   spawnFloor(0,false);
+   player.x=8;player.y=8.5;player.dir='u';
+   phase='play';
+   fadeEl.classList.remove('on');
+  },420);
+ },220);
+}
+skipBtn.addEventListener('pointerdown',e=>{e.preventDefault();if(phase==='opening')endOpening()});
+document.getElementById('title').addEventListener('pointerdown',()=>{if(phase==='title')startOpening()});
+
+function drawOpening(dt){
+ opT+=dt;
+ const W=cv.width,H=cv.height;
+ const prog=Math.min(1,opT/OP_LEN);
+ // sky gradient (morning)
+ const g=cx.createLinearGradient(0,0,0,H);
+ g.addColorStop(0,'#7ec3e8');g.addColorStop(.55,'#c9e4ee');g.addColorStop(.72,'#f0d9b8');g.addColorStop(1,'#8a8272');
+ cx.fillStyle=g;cx.fillRect(0,0,W,H);
+ // sun
+ cx.fillStyle='rgba(255,244,214,.9)';
+ cx.beginPath();cx.arc(W*.78,H*.2,Z*14,0,7);cx.fill();
+ // far buildings (parallax)
+ cx.fillStyle='#a8bcc4';
+ const off1=(opT*30)%(W+200);
+ for(let i=-1;i<6;i++){
+  const bx=i*(W/3.2)-off1*.4;
+  cx.fillRect(bx,H*.42,W/5,H*.3);
+ }
+ cx.fillStyle='#8fa4ac';
+ const off2=(opT*70)%(W+300);
+ for(let i=-1;i<6;i++){
+  const bx=i*(W/2.6)-off2*.6+80;
+  cx.fillRect(bx,H*.5,W/4.4,H*.24);
+ }
+ // road
+ cx.fillStyle='#6a6156';cx.fillRect(0,H*.72,W,H*.28);
+ cx.fillStyle='#f0e6d0';
+ const dashOff=(opT*260)%80;
+ for(let x=-80;x<W+80;x+=80){
+  cx.fillRect(x-dashOff,H*.84,40,Z*2);
+ }
+ // ─ target building: grows as we approach ─
+ const bScale=.25+prog*1.15;
+ const bw=W*.34*bScale, bh=H*.52*bScale;
+ const bx=W*.62-bw/2+(1-prog)*W*.25, by=H*.72-bh;
+ // body
+ cx.fillStyle='#5c5248';cx.fillRect(bx,by,bw,bh);
+ cx.fillStyle='#6e6254';cx.fillRect(bx,by,bw,bh*.06);
+ // windows
+ cx.fillStyle='#cfe4ea';
+ const rows=6,cols=4;
+ for(let r=0;r<rows;r++)for(let c=0;c<cols;c++){
+  const wx=bx+bw*.12+c*(bw*.2), wy=by+bh*.1+r*(bh*.14);
+  cx.fillRect(wx,wy,bw*.12,bh*.08);
+ }
+ // sign
+ if(prog>.45){
+  cx.fillStyle='#1a1712';
+  cx.fillRect(bx+bw*.1,by-bh*.1,bw*.8,bh*.09);
+  cx.fillStyle='#f0a832';
+  cx.font=`bold ${Math.max(8,bw*.07)}px 'Courier New',monospace`;
+  cx.textAlign='center';
+  cx.fillText('ISAI MOUTON',bx+bw*.5,by-bh*.1+bh*.065);
+  cx.textAlign='left';
+ }
+ // ─ running player (side view, DP sprite) ─
+ const scale=Z*1.7;
+ const runY=H*.72-18*scale+Math.abs(Math.sin(opT*9))*-Z*3;
+ const frame=Math.floor(opT*8)%2;
+ drawSprite('side',frame,W*.18,runY,scale,'player',false,1,false,true);
+ // dust
+ cx.fillStyle='rgba(240,230,208,.5)';
+ for(let i=0;i<3;i++){
+  const dx0=W*.16-((opT*140+i*30)%90);
+  cx.fillRect(dx0,H*.72-Z*2-i*Z*1.5,Z*2,Z*2);
+ }
+ // captions
+ let cap='';
+ CAPS.forEach(c=>{if(opT>=c[0])cap=c[1]});
+ opCap.textContent=cap;
+ if(opT>=OP_LEN)endOpening();
+}
+
+/* ════════ DIALOG / FSEL ════════ */
+const dlg=document.getElementById('dlg'),dNm=document.getElementById('dNm'),dTx=document.getElementById('dTx');
+let dlgOpen=false;
+function openDlg(nm,tx){dNm.textContent=nm;dTx.textContent=tx;dlg.classList.add('show');dlgOpen=true}
+function closeDlg(){dlg.classList.remove('show');dlgOpen=false}
+dlg.addEventListener('pointerdown',e=>{e.preventDefault();closeDlg()});
+
+const fsel=document.getElementById('fsel'),fselList=document.getElementById('fselList');
+let fselOpen=false;
+function openFsel(){
+ fselList.innerHTML='';
+ FLOORS.forEach((f,i)=>{
+  const d=document.createElement('div');
+  d.className='it'+(f.on?'':' off');
+  d.innerHTML=`<span>${f.nm}</span>`+(f.on?'':`<span class="tag">${f.tag}</span>`);
+  d.addEventListener('pointerdown',ev=>{ev.stopPropagation();goFloor(i)});
+  fselList.appendChild(d);
+ });
+ fsel.classList.add('show');fselOpen=true;
+}
+function closeFsel(){fsel.classList.remove('show');fselOpen=false}
+function goFloor(i){
+ closeFsel();
+ fadeEl.classList.add('on');
+ setTimeout(()=>{spawnFloor(i,true);fadeEl.classList.remove('on')},380);
+}
+
+/* ════════ NPC ════════ */
+function npcTick(n,dt){
+ if(n.mode==='sleep'){n.fr+=dt;return}
+ if(n.mode==='work'){
+  n.fr+=dt*5;
+  return;
+ }
+ // report: wander near desk + bubble
+ n.stateT-=dt;
+ const dx=n.tx-n.px,dy=n.ty-n.py,dist=Math.hypot(dx,dy);
+ if(dist<.08){
+  if(n.stateT<=0){
+   n.stateT=3+Math.random()*4;
+   n.bub=pick(n.lines);n.bubT=3;
+  }
+  n.tx=n.desk.x-1.2+Math.random()*3;n.ty=n.desk.y+1.8+Math.random()*2;
+  if(blocked(n.tx,n.ty)){n.tx=n.px;n.ty=n.py}
+  return;
+ }
+ const sp=1.25*dt;let nx=n.px+dx/dist*sp,ny=n.py+dy/dist*sp;
+ n.dir=Math.abs(dx)>Math.abs(dy)?(dx>0?'r':'l'):(dy>0?'d':'u');
+ if(!blocked(nx,ny)){n.px=nx;n.py=ny;n.fr+=dt*7}
+ else{n.tx=n.px;n.ty=n.py}
+}
+function pick(a){return a[Math.floor(Math.random()*a.length)]}
+
+/* ════════ DRAW WORLD ════════ */
+const cam={x:0,y:0};
+let perf=0;
+
+function drawWorld(){
+ const f=F();
+ cx.fillStyle='#c9c2b2';cx.fillRect(0,0,cv.width,cv.height);
+ for(let y=0;y<f.h;y++)for(let x=0;x<f.w;x++){
+  const px=(x-cam.x)*T*Z,py=(y-cam.y)*T*Z;
+  cx.fillStyle=((x+y)%2===0)?'#cfc8b8':'#c9c2b2';
+  cx.fillRect(px,py,T*Z+1,T*Z+1);
+ }
+ const px=(1-cam.x)*T*Z,py=(1-cam.y)*T*Z,w=(f.w-2)*T*Z,h=(f.h-2)*T*Z;
+ cx.fillStyle=f.c;cx.fillRect(px,py,w,h);
+ cx.strokeStyle='rgba(0,0,0,.08)';cx.lineWidth=Z;cx.strokeRect(px,py,w,h);
+ cx.fillStyle='rgba(60,50,40,.4)';cx.font=`bold ${6*Z}px 'Courier New',monospace`;
+ cx.fillText(f.nm,px+Z*6,py+Z*10);
+ if(!f.on){
+  cx.fillStyle='rgba(245,244,240,.45)';cx.fillRect(px,py,w,h);
+  cx.fillStyle='#a08a5a';cx.font=`bold ${5.5*Z}px 'Courier New',monospace`;
+  cx.fillText('['+f.tag+']',px+Z*6,py+Z*20);
+ }
+ for(let x=0;x<f.w;x++){wallTile(x,0);wallTile(x,f.h-1)}
+ for(let y=0;y<f.h;y++){wallTile(0,y);wallTile(f.w-1,y)}
+ drawElevator();
+ (f.desks||[]).forEach(d=>drawDesk(d.x,d.y));
+ (f.plants||[]).forEach(p=>drawPlant(p.x,p.y));
+ if(f.board)drawBoard(f.board.x,f.board.y);
+ if(f.recep)drawRecepDesk(f.recep.x,f.recep.y);
+ if(f.led)drawLED(f.led);
+}
+function wallTile(x,y){
+ const px=(x-cam.x)*T*Z,py=(y-cam.y)*T*Z;
+ cx.fillStyle='#5a4e40';cx.fillRect(px,py,T*Z+1,T*Z+1);
+ cx.fillStyle='#6b5d4d';cx.fillRect(px,py,T*Z+1,Z*4);
+}
+/* ── small elevator top-right (2 tiles on wall) ── */
+function drawElevator(){
+ const f=F(),e=elevOf(f);
+ const px=(e.x-cam.x)*T*Z,py=(e.y-1-cam.y)*T*Z; // on wall row
+ // frame
+ cx.fillStyle='#8a7a5a';cx.fillRect(px-Z,py+Z*2,T*Z*2+Z*2,T*Z-Z);
+ // doors
+ cx.fillStyle='#cfcabc';cx.fillRect(px,py+Z*3,T*Z-Z,T*Z-Z*3);
+ cx.fillRect(px+T*Z,py+Z*3,T*Z-Z,T*Z-Z*3);
+ cx.strokeStyle='#4a4238';cx.lineWidth=Z*.5;
+ cx.strokeRect(px,py+Z*3,T*Z-Z,T*Z-Z*3);
+ cx.strokeRect(px+T*Z,py+Z*3,T*Z-Z,T*Z-Z*3);
+ // lamp
+ cx.fillStyle='#f0a832';cx.fillRect(px+T*Z-Z*2,py+Z,Z*4,Z*1.5);
+ // floor plate
+ cx.fillStyle='rgba(0,0,0,.1)';
+ cx.fillRect(px,(e.y-cam.y)*T*Z+Z*10,T*Z*2,Z*3);
+}
+function drawDesk(dx,dy){
+ const px=(dx-cam.x)*T*Z,py=(dy-cam.y)*T*Z;
+ cx.fillStyle='#7a5c3e';cx.fillRect(px+Z,py+Z*4,T*Z*2-Z*2,T*Z-Z*4);
+ cx.fillStyle='#96754f';cx.fillRect(px+Z,py+Z*2,T*Z*2-Z*2,Z*5);
+ cx.fillStyle='#2a2a2a';cx.fillRect(px+Z*8,py+Z*2,Z*7,Z*4);
+ cx.fillStyle='#8fd0ff';cx.fillRect(px+Z*9,py+Z*3,Z*5,Z*2);
+ cx.fillStyle='#5a4530';cx.fillRect(px+Z*2,py+Z*1,Z*3,Z*3);
+}
+function drawRecepDesk(rx,ry){
+ const px=(rx-cam.x)*T*Z,py=(ry-cam.y)*T*Z;
+ cx.fillStyle='#8a6a46';cx.fillRect(px,py+Z*3,T*Z*3,T*Z-Z*3);
+ cx.fillStyle='#a8845c';cx.fillRect(px,py+Z*1,T*Z*3,Z*4);
+ cx.fillStyle='#f0e6d0';cx.font=`bold ${4.5*Z}px 'Courier New',monospace`;
+ cx.fillText('RECEPTION',px+Z*4,py+Z*9);
+ cx.fillStyle='#2e7d3a';cx.fillRect(px+T*Z*3-Z*4,py,Z*3,Z*3); // 小さい花
+}
+/* ── LED vision board (lobby) ── */
+function drawLED(led){
+ const px=(led.x-cam.x)*T*Z,py=(led.y-cam.y)*T*Z;
+ const w=led.w*T*Z,h=T*Z-Z*2;
+ cx.fillStyle='#0e0c0a';cx.fillRect(px,py+Z*2,w,h);
+ cx.strokeStyle='#3a352c';cx.lineWidth=Z;cx.strokeRect(px,py+Z*2,w,h);
+ const st=taskStats(),rep=reportCount();
+ const msg=`本日のタスク 進行中${st.run}件 ▸ 完了${st.done}件 ▸ 報告あり${rep}名 ▸ ようこそ ISAI Mouton へ ▸ `;
+ cx.save();
+ cx.beginPath();cx.rect(px+Z,py+Z*3,w-Z*2,h-Z*2);cx.clip();
+ cx.font=`bold ${5.5*Z}px 'Courier New',monospace`;
+ const tw=cx.measureText(msg).width;
+ const off=(perf/18)%tw;
+ // 点滅ドット感
+ cx.fillStyle=Math.floor(perf/500)%2?'#ffb340':'#f0a832';
+ cx.fillText(msg,px+Z*2-off,py+Z*3+h*.52);
+ cx.fillText(msg,px+Z*2-off+tw,py+Z*3+h*.52);
+ cx.restore();
+}
+function drawBoard(bx,by){
+ const px=(bx-cam.x)*T*Z,py=(by-cam.y)*T*Z;
+ cx.fillStyle='#26201a';cx.fillRect(px+Z,py+Z,T*Z-Z*2,T*Z-Z*3);
+ cx.fillStyle='#f0a832';cx.font=`bold ${5*Z}px 'Courier New',monospace`;cx.fillText('KPI',px+Z*3,py+Z*8);
+}
+function drawPlant(px0,py0){
+ const px=(px0-cam.x)*T*Z,py=(py0-cam.y)*T*Z;
+ cx.fillStyle='#8a4a2a';cx.fillRect(px+Z*5,py+Z*9,Z*6,Z*5);
+ cx.fillStyle='#2e7d3a';cx.fillRect(px+Z*4,py+Z*3,Z*8,Z*6);cx.fillRect(px+Z*6,py+Z*1,Z*4,Z*4);
+ cx.fillStyle='#3f9c4c';cx.fillRect(px+Z*5,py+Z*4,Z*3,Z*3);
+}
+
+function drawChar(entity,isPlayer){
+ const wx=(isPlayer?player.x:entity.px)-cam.x,wy=(isPlayer?player.y:entity.py)-cam.y;
+ const scale=Z*1.05;
+ const sx=wx*T*Z-7*scale,sy=wy*T*Z-16*scale;
+ cx.fillStyle='rgba(0,0,0,.2)';
+ cx.beginPath();cx.ellipse(wx*T*Z,wy*T*Z+2*Z,5*scale,1.7*scale,0,0,7);cx.fill();
+ if(isPlayer){
+  const frame=player.mv?Math.floor(player.fr)%2:0;
+  drawSprite(player.dir==='l'?'side':player.dir==='r'?'side':player.dir,frame,sx,sy,scale,'player',player.dir==='l',1,false,true);
+ }else{
+  const n=entity;
+  const sitting=n.mode==='work';
+  const frame=n.mode==='report'?Math.floor(n.fr)%2:0;
+  const kind=sitting?'down':(n.dir==='l'||n.dir==='r')?'side':n.dir;
+  const alpha=n.mode==='sleep'?.6:1;
+  // 作業中は小さく上下（タイピング感）
+  const workBob=sitting?Math.sin(n.fr*2.2)*Z*.5:0;
+  drawSprite(kind,frame,sx,sy+workBob,scale,n.pal,n.dir==='l',alpha,sitting,false);
+  if(n.mode==='sleep'){
+   cx.fillStyle='#8a8272';cx.font=`${5*Z}px monospace`;
+   cx.fillText('Zzz',sx+11*scale,sy-Z+Math.sin(perf/400)*Z);
+  }
+  if(n.mode==='report'&&(!n.bub||n.bubT<=0)){
+   cx.fillStyle='#c2410c';cx.font=`bold ${7*Z}px monospace`;
+   cx.fillText('❕',sx+10*scale,sy-Z*2+Math.sin(perf/200)*Z);
+  }
+ }
+}
+function drawBub(n){
+ if(!n.bub||n.bubT<=0)return;
+ const wx=(n.px-cam.x)*T*Z,wy=(n.py-cam.y)*T*Z;
+ cx.font=`${5.5*Z}px 'Courier New',monospace`;
+ const tw=cx.measureText(n.bub).width+Z*8;
+ const bx=wx-tw/2,by=wy-Z*32;
+ cx.fillStyle='rgba(255,255,255,.95)';cx.strokeStyle='#4a443a';cx.lineWidth=Z*.8;
+ cx.beginPath();
+ if(cx.roundRect)cx.roundRect(bx,by,tw,Z*10,Z*3);else cx.rect(bx,by,tw,Z*10);
+ cx.fill();cx.stroke();
+ cx.beginPath();cx.moveTo(wx-Z*2,by+Z*10);cx.lineTo(wx+Z*2,by+Z*10);cx.lineTo(wx,by+Z*13);cx.fill();
+ cx.fillStyle='#2a2622';cx.fillText(n.bub,bx+Z*4,by+Z*7);
+}
+function drawMark(x,y){
+ const wx=(x-cam.x)*T*Z,wy=(y-cam.y)*T*Z;
+ cx.fillStyle='#c2410c';cx.font=`bold ${9*Z}px 'Courier New',monospace`;
+ const b=Math.sin(perf/180)*Z*1.5;
+ cx.fillText('!',wx-Z*2,wy-Z*26+b);
+}
+
+/* ════════ INTERACT ════════ */
+function nearestTarget(){
+ const f=F();
+ let best=null,bd=1.7;
+ f.npcs.forEach(n=>{
+  const d=Math.hypot(n.px-player.x,n.py-player.y);
+  if(d<bd){bd=d;best={type:'npc',n}}
+ });
+ if(f.board){
+  const d=Math.hypot(f.board.x+.5-player.x,f.board.y+1-player.y);
+  if(d<1.8&&(!best||d<bd)){bd=d;best={type:'kpi'}}
+ }
+ if(f.led){
+  const d=Math.hypot(f.led.x+f.led.w/2-player.x,f.led.y+1.3-player.y);
+  if(d<2.2&&(!best||d<bd)){bd=d;best={type:'led'}}
+ }
+ const e=elevOf(f);
+ const ed=Math.hypot(e.x+1-player.x,e.y+.8-player.y);
+ if(ed<1.7&&(!best||ed<bd))best={type:'elev'};
+ return best;
+}
+function handleA(){
+ if(phase==='title'){startOpening();return}
+ if(phase==='opening'){endOpening();return}
+ if(fselOpen){closeFsel();return}
+ if(dlgOpen){closeDlg();return}
+ if(phase!=='play')return;
+ const t=nearestTarget();
+ if(!t)return;
+ if(t.type==='npc'){
+  const n=t.n;
+  const {st,now}=n.fixed?{st:'作業中',now:''}:statusOf(n.id);
+  const label=n.mode==='sleep'?'（待機中）':n.mode==='work'?'（作業中）':'（報告あり❕）';
+  const extra=now?'\n▸ いま: '+now:'';
+  openDlg(n.nm+' '+label,'『'+pick(n.lines)+'』\n'+n.role+extra);
+ }else if(t.type==='kpi'){
+  let msg='';
+  if(LIVE&&LIVE.kpi&&LIVE.kpi.length){
+   const k=LIVE.kpi[LIVE.kpi.length-1];
+   msg='Threadsフォロワー: '+k['Threadsフォロワー']+'\n投稿数: '+k['投稿数']+'\nLINK接触: '+k['LINK接触']+'\nnote売上: ¥'+k['note売上']+'\nLINK会員: '+k['LINK会員数']+' / 100';
+  }else{
+   msg='Threadsフォロワー: 128\n投稿数: 3\nLINK接触: 2\nnote売上: ¥0\nLINK会員: 24 / 100\n（デモ表示）';
+  }
+  openDlg('社内掲示板 — Today\'s KPI',msg);
+ }else if(t.type==='led'){
+  const st=taskStats();
+  openDlg('LEDビジョン','本日のタスク状況\n▸ 進行中: '+st.run+'件\n▸ 完了: '+st.done+'件\n▸ 報告あり: '+reportCount()+'名\n\n詳細は司令室アプリでどうぞ（右上📱）');
+ }else if(t.type==='elev'){
+  openFsel();
+ }
+}
+
+/* ════════ LOOP ════════ */
+function resize(){
+ cv.width=innerWidth;cv.height=innerHeight;
+ Z=Math.max(2,Math.min(4,Math.floor(Math.min(innerWidth,innerHeight)/(T*10))));
+ cx.imageSmoothingEnabled=false;
+}
+addEventListener('resize',resize);resize();
+
+let last=0;
+function loop(t){
+ const dt=Math.min(.05,(t-last)/1000)||0;last=t;perf=t;
+ if(phase==='opening'){drawOpening(dt);requestAnimationFrame(loop);return}
+ if(phase==='play'){
+  if(!dlgOpen&&!fselOpen){
+   let dx=0,dy=0;
+   if(key.u)dy-=1;if(key.d)dy+=1;if(key.l)dx-=1;if(key.r)dx+=1;
+   player.mv=(dx!==0||dy!==0);
+   if(player.mv){
+    const m=Math.hypot(dx,dy);dx/=m;dy/=m;
+    player.dir=Math.abs(dx)>Math.abs(dy)?(dx>0?'r':'l'):(dy>0?'d':'u');
+    let nx=player.x+dx*SPD*dt,ny=player.y+dy*SPD*dt;
+    const R=.28;
+    if(!blocked(nx+Math.sign(dx)*R,player.y))player.x=nx;
+    if(!blocked(player.x,ny+Math.sign(dy)*R))player.y=ny;
+    player.fr+=dt*7;
+   }
+   F().npcs.forEach(n=>{npcTick(n,dt);if(n.bubT>0)n.bubT-=dt});
+  }
+  const f=F();
+  const vw=cv.width/(T*Z),vh=cv.height/(T*Z);
+  cam.x=Math.max(0,Math.min(Math.max(0,f.w-vw),player.x-vw/2));
+  cam.y=Math.max(0,Math.min(Math.max(0,f.h-vh),player.y-vh/2));
+  if(f.w<vw)cam.x=(f.w-vw)/2;
+  if(f.h<vh)cam.y=(f.h-vh)/2;
+  drawWorld();
+  const chars=f.npcs.map(n=>({y:n.py,fn:()=>drawChar(n,false)}));
+  chars.push({y:player.y,fn:()=>drawChar(null,true)});
+  chars.sort((a,b)=>a.y-b.y).forEach(c=>c.fn());
+  f.npcs.forEach(drawBub);
+  const tg=nearestTarget();
+  if(tg&&!dlgOpen&&!fselOpen){
+   const e=elevOf(f);
+   if(tg.type==='npc')drawMark(tg.n.px,tg.n.py);
+   else if(tg.type==='kpi')drawMark(f.board.x+.5,f.board.y+1.4);
+   else if(tg.type==='led')drawMark(f.led.x+f.led.w/2,f.led.y+1.6);
+   else drawMark(e.x+1,e.y+1);
+  }
+ }
+ requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>

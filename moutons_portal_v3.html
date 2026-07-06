@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mouton's</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html { scroll-behavior:smooth; }
+  body {
+    background:#04070f; color:#e8e6df;
+    font-family:"Hiragino Kaku Gothic ProN","Yu Gothic",sans-serif;
+    overflow-x:hidden;
+  }
+
+  #hero { position:relative; height:100vh; width:100%; overflow:hidden; }
+  #space { position:absolute; inset:0; display:block; }
+  #hero::after {
+    content:""; position:absolute; inset:0; pointer-events:none;
+    background:radial-gradient(ellipse 120% 90% at 50% 45%, transparent 45%, rgba(2,4,10,.55) 78%, rgba(1,2,6,.92) 100%);
+  }
+
+  /* cinematic title: dolly-zoom fade in (after bang) */
+  #title {
+    position:absolute; inset:0; display:flex; flex-direction:column;
+    align-items:center; justify-content:center; pointer-events:none; z-index:5;
+  }
+  #title h1 {
+    font-family:"Didot","Bodoni 72","Times New Roman",serif;
+    font-weight:400; letter-spacing:.35em; text-indent:.35em;
+    font-size:clamp(44px,9vw,110px);
+    color:#f3ead2;
+    text-shadow:0 0 18px rgba(232,199,119,.45), 0 0 60px rgba(193,39,45,.25);
+    opacity:0; transform:scale(1.6); filter:blur(6px);
+  }
+  #title h1.on { animation:dolly 4.5s cubic-bezier(.16,.65,.2,1) forwards; }
+  @keyframes dolly {
+    0% { opacity:0; transform:scale(1.6); filter:blur(6px); }
+    35% { opacity:.55; }
+    100% { opacity:1; transform:scale(1); filter:blur(0); }
+  }
+  #title p {
+    margin-top:18px; font-size:12px; letter-spacing:.5em; text-indent:.5em;
+    color:rgba(232,214,168,.75); opacity:0;
+  }
+  #title p.on { animation:fadeIn 2.4s ease .9s forwards; }
+  @keyframes fadeIn { to { opacity:1; } }
+
+  /* subliminal mindset messages */
+  #mind {
+    position:absolute; z-index:4; pointer-events:none;
+    font-size:clamp(13px,2.2vw,17px); letter-spacing:.3em;
+    color:rgba(232,214,168,0); white-space:nowrap;
+    text-shadow:0 0 14px rgba(232,199,119,.35);
+    transition:color 2.2s ease;
+  }
+  #mind.show { color:rgba(232,214,168,.42); }
+
+  #scrollHint {
+    position:absolute; bottom:28px; left:50%; transform:translateX(-50%);
+    font-size:11px; letter-spacing:.35em; color:rgba(200,200,210,.55);
+    z-index:5; opacity:0;
+  }
+  #scrollHint.on { animation:fadeIn 2s ease forwards; }
+  #scrollHint::after {
+    content:""; display:block; width:1px; height:34px; margin:10px auto 0;
+    background:linear-gradient(rgba(232,199,119,.8),transparent);
+    animation:drop 1.8s ease-in-out infinite;
+  }
+  @keyframes drop { 0%{transform:scaleY(0);transform-origin:top} 55%{transform:scaleY(1);transform-origin:top} 100%{transform:scaleY(0);transform-origin:bottom} }
+
+  /* ===== DASHBOARD ===== */
+  #board { position:relative; padding:70px 0 90px; background:linear-gradient(#04070f, #070d1a 30%, #0a1222); }
+  .section-label { text-align:center; font-size:11px; letter-spacing:.45em; text-indent:.45em; color:rgba(232,199,119,.85); margin-bottom:8px; }
+  .section-title { text-align:center; font-family:"Didot","Bodoni 72",serif; font-weight:400; font-size:26px; letter-spacing:.18em; color:#f0ead9; margin-bottom:36px; }
+
+  .stage { perspective:1200px; overflow-x:auto; overflow-y:visible; -webkit-overflow-scrolling:touch; scrollbar-width:none; }
+  .stage::-webkit-scrollbar { display:none; }
+  .rail { display:flex; gap:26px; padding:30px max(6vw,24px) 50px; transform-style:preserve-3d; width:max-content; margin:0 auto; }
+  .card {
+    display:block; text-decoration:none; color:inherit;
+    width:300px; flex:0 0 auto; border-radius:22px; padding:26px 24px;
+    background:linear-gradient(160deg, rgba(20,30,52,.92), rgba(9,14,26,.96));
+    border:1px solid rgba(232,199,119,.18);
+    box-shadow:0 24px 60px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.06);
+    transform:rotateY(calc(var(--r) * 1deg)) translateZ(0);
+    transition:transform .5s cubic-bezier(.2,.7,.2,1), border-color .5s;
+    cursor:pointer;
+  }
+  .card:hover { transform:rotateY(0deg) translateZ(40px); border-color:rgba(232,199,119,.5); }
+  .card h2 { font-family:"Didot","Bodoni 72",serif; font-weight:400; font-size:22px; letter-spacing:.08em; color:#f3ead2; margin-bottom:4px; }
+  .card .sub { font-size:11px; letter-spacing:.2em; color:rgba(180,190,210,.6); margin-bottom:20px; }
+  .card .open { display:inline-block; margin-top:16px; font-size:11px; letter-spacing:.25em; color:#e8c777; border-bottom:1px solid rgba(232,199,119,.4); padding-bottom:2px; }
+
+  .gauge-wrap { display:flex; justify-content:center; margin-bottom:6px; }
+  .kv { display:flex; justify-content:space-between; font-size:12px; color:rgba(190,200,215,.75); padding:7px 2px; border-bottom:1px solid rgba(255,255,255,.06); }
+  .kv b { color:#f0ead9; font-weight:600; }
+  .kv .gold, b.gold { color:#e8c777; }
+  .kv .red, b.red { color:#e2554e; }
+
+  .todo { margin-top:16px; }
+  .todo p { font-size:11px; letter-spacing:.25em; color:rgba(232,199,119,.8); margin-bottom:8px; }
+  .todo li { list-style:none; font-size:12.5px; color:rgba(210,215,225,.85); padding:6px 0 6px 18px; position:relative; }
+  .todo li::before { content:""; position:absolute; left:0; top:12px; width:7px; height:7px; border-radius:50%; border:1.5px solid rgba(232,199,119,.7); }
+
+  .issue {
+    margin-top:16px; padding:12px 14px; border-radius:12px;
+    background:rgba(193,39,45,.1); border:1px solid rgba(193,39,45,.3);
+    font-size:12px; line-height:1.7; color:rgba(235,220,215,.9);
+  }
+  .issue span { display:block; font-size:10px; letter-spacing:.3em; color:#e2554e; margin-bottom:5px; }
+
+  .swipe-hint { text-align:center; font-size:10px; letter-spacing:.4em; color:rgba(180,190,210,.4); margin-top:4px; }
+
+  /* schedule */
+  .schedule { max-width:680px; margin:0 auto 48px; padding:0 max(5vw,16px); }
+  .sched-header { display:flex; justify-content:space-between; align-items:baseline; margin-bottom:14px; }
+  .sched-header h3 { font-family:"Didot","Bodoni 72",serif; font-weight:400; font-size:20px; color:#f0ead9; letter-spacing:.1em; }
+  .sched-header .date { font-size:12px; color:rgba(232,199,119,.8); letter-spacing:.15em; }
+  .timeline { position:relative; padding-left:22px; }
+  .timeline::before { content:""; position:absolute; left:6px; top:6px; bottom:6px; width:1px; background:linear-gradient(rgba(232,199,119,.45),rgba(232,199,119,.08)); }
+  .ev { position:relative; padding:10px 0 10px 20px; }
+  .ev::before { content:""; position:absolute; left:-19px; top:16px; width:9px; height:9px; border-radius:50%; border:1.5px solid rgba(232,199,119,.7); background:#0a1222; }
+  .ev.now::before { background:#e8c777; border-color:#e8c777; box-shadow:0 0 8px rgba(232,199,119,.5); }
+  .ev-time { font-size:11px; color:rgba(232,199,119,.75); letter-spacing:.12em; margin-bottom:3px; }
+  .ev-name { font-size:14px; color:#e8e6df; font-weight:500; }
+  .ev-tag { display:inline-block; font-size:10px; letter-spacing:.1em; padding:2px 8px; border-radius:6px; margin-left:8px; vertical-align:middle; }
+  .ev-tag.link { background:rgba(232,199,119,.15); color:#e8c777; }
+  .ev-tag.bukatsu { background:rgba(93,202,165,.15); color:#5dcaa5; }
+  .ev-tag.rice { background:rgba(150,170,220,.15); color:rgba(180,195,230,.85); }
+  .ev-tag.perro { background:rgba(226,85,78,.12); color:#e2776e; }
+  .ev-tag.personal { background:rgba(180,160,220,.12); color:rgba(190,175,230,.85); }
+  .ev-empty { font-size:13px; color:rgba(180,190,210,.5); padding:12px 0 12px 20px; font-style:italic; }
+
+  /* calendar */
+  .cal-wrap { max-width:680px; margin:0 auto 40px; padding:0 max(5vw,16px); }
+  .cal-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; }
+  .cal-header h3 { font-family:"Didot","Bodoni 72",serif; font-weight:400; font-size:20px; color:#f0ead9; letter-spacing:.1em; }
+  .cal-nav { display:flex; gap:8px; }
+  .cal-nav button { background:none; border:1px solid rgba(232,199,119,.25); color:#e8c777; width:32px; height:32px; border-radius:50%; cursor:pointer; font-size:14px; transition:border-color .3s; }
+  .cal-nav button:hover { border-color:rgba(232,199,119,.6); }
+  .cal-grid { display:grid; grid-template-columns:repeat(7,1fr); gap:2px; text-align:center; }
+  .cal-dow { font-size:10px; letter-spacing:.15em; color:rgba(180,190,210,.45); padding:6px 0; }
+  .cal-day {
+    position:relative; padding:10px 0; font-size:13px; color:rgba(210,215,225,.7);
+    border-radius:10px; cursor:pointer; transition:background .3s, color .3s;
+  }
+  .cal-day:hover { background:rgba(232,199,119,.08); }
+  .cal-day.today { color:#f3ead2; font-weight:600; background:rgba(232,199,119,.12); }
+  .cal-day.today::after { content:""; position:absolute; bottom:4px; left:50%; transform:translateX(-50%); width:4px; height:4px; border-radius:50%; background:#e8c777; }
+  .cal-day.has-event::after { content:""; position:absolute; bottom:4px; left:50%; transform:translateX(-50%); width:4px; height:4px; border-radius:50%; background:rgba(232,199,119,.6); }
+  .cal-day.today.has-event::after { width:4px; height:4px; background:#e8c777; box-shadow:0 0 6px rgba(232,199,119,.6); }
+  .cal-day.other { color:rgba(150,160,180,.3); }
+  .cal-day.selected { background:rgba(232,199,119,.18); color:#f3ead2; }
+  .cal-dots { display:flex; gap:3px; justify-content:center; position:absolute; bottom:3px; left:0; right:0; }
+  .cal-dot { width:4px; height:4px; border-radius:50%; }
+  .cal-dot.gold { background:#e8c777; }
+  .cal-dot.teal { background:#5dcaa5; }
+  .cal-dot.blue { background:rgba(180,195,230,.85); }
+  .cal-dot.coral { background:#e2776e; }
+
+  @media (prefers-reduced-motion: reduce) {
+    #title h1.on, #title p.on, #scrollHint.on { animation:none; opacity:1; transform:none; filter:none; }
+  }
+</style>
+</head>
+<body>
+
+<section id="hero">
+  <canvas id="space"></canvas>
+  <div id="title">
+    <h1 id="titleText">Mouton&#39;s</h1>
+    <p id="tagline">ONE LIFE, MANY DREAMS</p>
+  </div>
+  <div id="mind"></div>
+  <div id="scrollHint">SCROLL</div>
+</section>
+
+<section id="board">
+  <p class="section-label">DASHBOARD</p>
+  <h2 class="section-title">今日のMouton&#39;s</h2>
+
+  <div class="cal-wrap" id="calWrap"></div>
+
+  <div class="schedule">
+    <div class="sched-header">
+      <h3>Schedule</h3>
+      <span class="date" id="schedDate">7月6日（日）</span>
+    </div>
+    <div class="timeline">
+      <div class="ev">
+        <p class="ev-time">9:00 – 17:00</p>
+        <p class="ev-name">東京陸送<span class="ev-tag rice">Ricework</span></p>
+      </div>
+      <div class="ev now">
+        <p class="ev-time">18:30 – 20:30</p>
+        <p class="ev-name">沼南体育館 バドミントン<span class="ev-tag bukatsu">BUKATSU</span></p>
+      </div>
+      <div class="ev">
+        <p class="ev-time">21:00</p>
+        <p class="ev-name">LINK 候補3名にDM<span class="ev-tag link">LINK</span></p>
+      </div>
+    </div>
+
+    <div class="sched-header" style="margin-top:28px">
+      <h3 style="font-size:16px;color:rgba(240,234,217,.65)">Tomorrow</h3>
+      <span class="date" style="opacity:.6">7月7日（月）</span>
+    </div>
+    <div class="timeline" style="opacity:.65">
+      <div class="ev">
+        <p class="ev-time">9:00 – 17:00</p>
+        <p class="ev-name">東京陸送<span class="ev-tag rice">Ricework</span></p>
+      </div>
+      <div class="ev">
+        <p class="ev-time">19:00</p>
+        <p class="ev-name">ゼロちゃん note記事 下書き<span class="ev-tag personal">Personal</span></p>
+      </div>
+    </div>
+  </div>
+
+  <div class="stage">
+    <div class="rail">
+
+      <a class="card" style="--r:14" href="./isai_mouton_hq_v2.html">
+        <h2>ISAI Mouton</h2>
+        <p class="sub">BUSINESS 総合</p>
+        <div class="gauge-wrap">
+          <svg viewBox="0 0 160 92" width="160" height="92">
+            <path d="M 14 82 A 66 66 0 0 1 146 82" fill="none" stroke="rgba(255,255,255,.09)" stroke-width="11" stroke-linecap="round"/>
+            <path d="M 14 82 A 66 66 0 0 1 116 32" fill="none" stroke="#e8c777" stroke-width="11" stroke-linecap="round"/>
+            <text x="80" y="66" text-anchor="middle" font-size="23" fill="#f3ead2" font-weight="600">58%</text>
+            <text x="80" y="84" text-anchor="middle" font-size="9" fill="rgba(200,205,220,.6)">月間目標達成率</text>
+          </svg>
+        </div>
+        <div class="kv"><span>LINK 会員</span><b class="gold">42 / 100人</b></div>
+        <div class="kv"><span>ゼロちゃん社 収益</span><b>¥12,740</b></div>
+        <div class="kv"><span>BUKATSU 会員</span><b>131人</b></div>
+        <div class="todo">
+          <p>TODAY&#39;S TODO</p>
+          <ul>
+            <li>LINK 優先リスト 3名にDM</li>
+            <li>ゼロちゃん note 有料版 見出し確定</li>
+          </ul>
+        </div>
+        <div class="issue">
+          <span>今週の課題</span>
+          DM返信後のアポ転換が停滞中。テンプレの「次の一歩」提示を強める。
+        </div>
+        <span class="open">OPEN →</span>
+      </a>
+
+      <a class="card" style="--r:0" href="./my_mouton.html">
+        <h2>My Mouton</h2>
+        <p class="sub">PERSONAL 収支</p>
+        <div class="gauge-wrap">
+          <svg viewBox="0 0 160 92" width="160" height="92">
+            <path d="M 14 82 A 66 66 0 0 1 146 82" fill="none" stroke="rgba(255,255,255,.09)" stroke-width="11" stroke-linecap="round"/>
+            <path d="M 14 82 A 66 66 0 0 1 124 38" fill="none" stroke="#e2554e" stroke-width="11" stroke-linecap="round"/>
+            <text x="80" y="66" text-anchor="middle" font-size="23" fill="#f3ead2" font-weight="600">62%</text>
+            <text x="80" y="84" text-anchor="middle" font-size="9" fill="rgba(200,205,220,.6)">返済進捗</text>
+          </svg>
+        </div>
+        <div class="kv"><span>7月前半 支出</span><b>¥48,200</b></div>
+        <div class="kv"><span>借入残高</span><b class="red">¥312,000</b></div>
+        <div class="kv"><span>インカム目標 ¥500,000</span><b class="gold">8%</b></div>
+        <div class="todo">
+          <p>TODAY&#39;S TODO</p>
+          <ul>
+            <li>今日の支出を記録する</li>
+            <li>思考メモ 1本</li>
+          </ul>
+        </div>
+        <div class="issue">
+          <span>今週の課題</span>
+          雑費のカテゴリ分けが曖昧。「投資／消費／浪費」の3分類で記録する。
+        </div>
+        <span class="open">OPEN →</span>
+      </a>
+
+      <a class="card" style="--r:-14" href="#dreams">
+        <h2>Dreams</h2>
+        <p class="sub">夢・目標 トラッカー</p>
+        <div class="kv"><span>MSCベリッシマ / 飛鳥Ⅲ</span><b class="gold">貯金中</b></div>
+        <div class="kv"><span>レクサスRC F SPORT（赤）</span><b class="gold">情報収集</b></div>
+        <div class="kv"><span>インカム収入 ¥500,000</span><b>進行中</b></div>
+        <div class="kv"><span>台湾・NY・インド…旅行</span><b>計画前</b></div>
+        <div class="kv"><span>花火大会・ディズニー</span><b class="gold">今夏◎</b></div>
+        <div class="todo">
+          <p>NEXT ACTION</p>
+          <ul>
+            <li>ベリッシマ 来季クルーズ料金を確認</li>
+            <li>バドミントンの予定を1本入れる</li>
+          </ul>
+        </div>
+        <span class="open">OPEN →</span>
+      </a>
+
+    </div>
+  </div>
+  <p class="swipe-hint">← SWIPE →</p>
+</section>
+
+<script>
+(function(){
+  const canvas = document.getElementById('space');
+  const renderer = new THREE.WebGLRenderer({canvas, antialias:true, alpha:false});
+  renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+
+  const scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x04070f);
+  scene.fog = new THREE.Fog(0x04070f, 8, 30);
+
+  const camera = new THREE.PerspectiveCamera(58, 1, 0.1, 100);
+  camera.position.z = 10;
+
+  const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /* ---------- phase timings (seconds) ---------- */
+  const T_FALL_END = 2.6;   // shooting stars fall
+  const T_BANG = 2.6;       // big bang moment
+  const T_TITLE = 3.4;      // title dolly-zoom starts
+  const T_PANELS = 4.6;     // dream panels emerge
+
+  /* ---------- 1. shooting stars (center -> down) ---------- */
+  const S = 140;
+  const sGeo = new THREE.BufferGeometry();
+  const sPos = new Float32Array(S*3);
+  const sVel = [];
+  for(let i=0;i<S;i++){
+    sPos[i*3] = (Math.random()-0.5)*1.6;
+    sPos[i*3+1] = 2 + Math.random()*4;
+    sPos[i*3+2] = -2 - Math.random()*6;
+    sVel.push({ vx:(Math.random()-0.5)*1.6, vy:-(5+Math.random()*7), delay:Math.random()*1.2 });
+  }
+  sGeo.setAttribute('position', new THREE.BufferAttribute(sPos,3));
+  const stars = new THREE.Points(sGeo, new THREE.PointsMaterial({color:0xfff3d6, size:0.09, transparent:true, opacity:0.95}));
+  scene.add(stars);
+
+  /* ---------- 2. big bang (expanding shell at bottom) ---------- */
+  const B = 500;
+  const bGeo = new THREE.BufferGeometry();
+  const bPos = new Float32Array(B*3);
+  const bDir = [];
+  for(let i=0;i<B;i++){
+    const th = Math.random()*Math.PI*2;
+    const ph = Math.acos(2*Math.random()-1);
+    bDir.push({ x:Math.sin(ph)*Math.cos(th), y:Math.abs(Math.sin(ph)*Math.sin(th)), z:Math.cos(ph)*0.6, sp:2.5+Math.random()*6 });
+    bPos[i*3]=0; bPos[i*3+1]=-5.2; bPos[i*3+2]=-4;
+  }
+  bGeo.setAttribute('position', new THREE.BufferAttribute(bPos,3));
+  const bangGold = new THREE.Points(bGeo, new THREE.PointsMaterial({color:0xe8c777, size:0.1, transparent:true, opacity:0}));
+  const bangRed = bangGold.clone();
+  bangRed.material = new THREE.PointsMaterial({color:0xc1272d, size:0.13, transparent:true, opacity:0});
+  scene.add(bangGold, bangRed);
+
+  /* flash light plane */
+  const flash = new THREE.Mesh(
+    new THREE.PlaneGeometry(60,40),
+    new THREE.MeshBasicMaterial({color:0xffe9b8, transparent:true, opacity:0})
+  );
+  flash.position.set(0,-6,-6);
+  scene.add(flash);
+
+  /* ---------- 3. dream panels ---------- */
+  const dreams = [
+    ['MSCベリッシマ','に乗る'],['飛鳥Ⅲ','世界一周'],['LEXUS RC','F SPORT 赤'],
+    ['バドミントン','もっと沢山'],['北海道','旅行'],['沖縄','旅行'],
+    ['京都・大阪','旅行'],['台湾','旅行'],['NEW YORK','旅行'],
+    ['インド','旅行'],['韓国','旅行'],['花火大会','家族と'],
+    ['ディズニー','連れて行く'],['インカム収入','¥500,000'],
+    ['レッドカーペット','仲間と成功'],['九州','旅行']
+  ];
+  function makeTexture(main, sub, gold){
+    const c = document.createElement('canvas');
+    c.width=512; c.height=320;
+    const g = c.getContext('2d');
+    const grad = g.createLinearGradient(0,0,512,320);
+    if(gold){ grad.addColorStop(0,'#2a2410'); grad.addColorStop(1,'#3d2f12'); }
+    else { grad.addColorStop(0,'#141d33'); grad.addColorStop(1,'#1d1226'); }
+    g.fillStyle=grad; g.fillRect(0,0,512,320);
+    g.strokeStyle = gold ? 'rgba(232,199,119,.85)' : 'rgba(150,170,220,.45)';
+    g.lineWidth=6; g.strokeRect(8,8,496,304);
+    g.fillStyle='#f3ead2'; g.textAlign='center';
+    g.font='600 52px "Hiragino Kaku Gothic ProN", sans-serif';
+    g.fillText(main,256,158);
+    g.fillStyle = gold ? '#e8c777' : 'rgba(200,210,230,.8)';
+    g.font='400 30px "Hiragino Kaku Gothic ProN", sans-serif';
+    g.fillText(sub,256,214);
+    return new THREE.CanvasTexture(c);
+  }
+  const group = new THREE.Group();
+  const panels = [];
+  dreams.forEach((d,i)=>{
+    const gold = i%3===0;
+    const mat = new THREE.MeshBasicMaterial({map:makeTexture(d[0],d[1],gold), transparent:true, opacity:0});
+    const w = 1.9 + Math.random()*1.1;
+    const mesh = new THREE.Mesh(new THREE.PlaneGeometry(w,w*0.62), mat);
+    const theta = (Math.random()-0.5)*2.4;
+    const phi = (Math.random()-0.5)*1.4;
+    const r = 7 + Math.random()*8;
+    const target = new THREE.Vector3(Math.sin(theta)*r, Math.sin(phi)*r*0.55, -Math.cos(theta)*Math.cos(phi)*r + 6);
+    mesh.position.set(0,-5.2,-4); // born at the bang
+    mesh.lookAt(camera.position);
+    mesh.userData = { target, baseY:target.y, speed:0.15+Math.random()*0.35, phase:Math.random()*Math.PI*2, delay:Math.random()*1.6 };
+    group.add(mesh); panels.push(mesh);
+  });
+  scene.add(group);
+
+  /* ambient particles */
+  const pGeo = new THREE.BufferGeometry();
+  const N=220, pos=new Float32Array(N*3);
+  for(let i=0;i<N;i++){ pos[i*3]=(Math.random()-0.5)*36; pos[i*3+1]=(Math.random()-0.5)*20; pos[i*3+2]=-Math.random()*24+4; }
+  pGeo.setAttribute('position', new THREE.BufferAttribute(pos,3));
+  const goldPts = new THREE.Points(pGeo, new THREE.PointsMaterial({color:0xe8c777,size:0.07,transparent:true,opacity:0}));
+  const redPts = goldPts.clone();
+  redPts.material = new THREE.PointsMaterial({color:0xc1272d,size:0.09,transparent:true,opacity:0});
+  redPts.rotation.z=1.3;
+  scene.add(goldPts,redPts);
+
+  /* ---------- subliminal mindset messages ---------- */
+  const messages = [
+    '夢は、置いた瞬間に近づく','今日の一歩が、ベリッシマへの一歩','赤いRCは、もう決まっている',
+    '仲間と歩く、レッドカーペット','稼ぐことは、誰かを連れて行く力','60点で出す。今日も前へ',
+    '未来の自分は、今日の自分を見ている','花火の下で、笑っている','世界は、行くと決めた人のもの'
+  ];
+  const mindEl = document.getElementById('mind');
+  function showMessage(){
+    const m = messages[Math.floor(Math.random()*messages.length)];
+    mindEl.textContent = m;
+    mindEl.style.left = (12+Math.random()*55)+'%';
+    mindEl.style.top = (14+Math.random()*62)+'%';
+    mindEl.classList.add('show');
+    setTimeout(()=>mindEl.classList.remove('show'), 4200);
+  }
+
+  function resize(){
+    const w = canvas.clientWidth||innerWidth, h = canvas.clientHeight||innerHeight;
+    renderer.setSize(w,h,false); camera.aspect=w/h; camera.updateProjectionMatrix();
+  }
+  addEventListener('resize',resize); resize();
+
+  let titleShown=false, msgTimer=null;
+  const t0 = performance.now();
+
+  function tick(now){
+    const t = (now-t0)/1000;
+
+    /* phase 1: shooting stars */
+    if(t < T_FALL_END + 1){
+      const arr = sGeo.attributes.position.array;
+      for(let i=0;i<S;i++){
+        const v = sVel[i];
+        if(t > v.delay){
+          arr[i*3] += v.vx*0.016;
+          arr[i*3+1] += v.vy*0.016;
+        }
+      }
+      sGeo.attributes.position.needsUpdate = true;
+      stars.material.opacity = Math.max(0, 0.95 - Math.max(0,t-T_FALL_END)*1.5);
+    }
+
+    /* phase 2: big bang */
+    if(t > T_BANG){
+      const bt = t - T_BANG;
+      const arr = bGeo.attributes.position.array;
+      for(let i=0;i<B;i++){
+        const d = bDir[i], e = Math.min(bt,2.2);
+        arr[i*3] = d.x*d.sp*e;
+        arr[i*3+1] = -5.2 + d.y*d.sp*e*0.9;
+        arr[i*3+2] = -4 + d.z*d.sp*e;
+      }
+      bGeo.attributes.position.needsUpdate = true;
+      const fade = Math.max(0, 1 - bt/2.6);
+      bangGold.material.opacity = fade*0.95;
+      bangRed.material.opacity = fade*0.7;
+      flash.material.opacity = Math.max(0, 0.85 - bt*1.7);
+    }
+
+    /* title */
+    if(!titleShown && t > T_TITLE){
+      titleShown = true;
+      document.getElementById('titleText').classList.add('on');
+      document.getElementById('tagline').classList.add('on');
+      document.getElementById('scrollHint').classList.add('on');
+      msgTimer = setInterval(showMessage, 6500);
+      setTimeout(showMessage, 2500);
+    }
+
+    /* phase 3: panels emerge from bang point */
+    if(t > T_PANELS){
+      const pt = t - T_PANELS;
+      panels.forEach(m=>{
+        const u = m.userData;
+        const e = Math.min(Math.max((pt-u.delay)/2.2,0),1);
+        const ease = 1-Math.pow(1-e,3);
+        m.position.lerpVectors(new THREE.Vector3(0,-5.2,-4), u.target, ease);
+        m.material.opacity = ease*0.95;
+        if(e>=1 && !reduced){
+          m.position.y = u.baseY + Math.sin(t*u.speed+u.phase)*0.45;
+        }
+        m.lookAt(camera.position);
+      });
+      const gp = Math.min((pt)/3,0.75);
+      goldPts.material.opacity = gp;
+      redPts.material.opacity = gp*0.65;
+      if(!reduced){
+        group.rotation.y = Math.sin(t*0.05)*0.08;
+        goldPts.rotation.y = t*0.008;
+        redPts.rotation.y = -t*0.006;
+        camera.position.x = Math.sin(t*0.07)*0.4;
+        camera.lookAt(0,0,0);
+      }
+    }
+
+    renderer.render(scene,camera);
+    requestAnimationFrame(tick);
+  }
+
+  if(reduced){
+    /* skip cinematics */
+    document.getElementById('titleText').classList.add('on');
+    document.getElementById('tagline').classList.add('on');
+    document.getElementById('scrollHint').classList.add('on');
+    panels.forEach(m=>{ m.position.copy(m.userData.target); m.material.opacity=0.95; m.lookAt(camera.position); });
+    goldPts.material.opacity=0.75; redPts.material.opacity=0.5;
+    renderer.render(scene,camera);
+  } else {
+    requestAnimationFrame(tick);
+  }
+})();
+
+(function(){
+  /* GAS URL（デプロイ後にlocalStorageに保存） */
+  var GAS_URL = localStorage.getItem('isai_mouton_gas_url') || '';
+
+  /* GASからイベントを取得してカレンダーに反映 */
+  var gasEvents = {};
+  function loadGasEvents(callback) {
+    if (!GAS_URL) { callback({}); return; }
+    fetch(GAS_URL + '?action=getEvents', { cache: 'no-store' })
+      .then(function(r){ return r.json(); })
+      .then(function(res){
+        if (res.ok && res.events) {
+          /* GAS形式 { '2026-07-07': [{type:'rice',memo:''}] } を
+             ドット表示用 { '2026-07-07': ['rice'] } に変換 */
+          var converted = {};
+          Object.keys(res.events).forEach(function(date){
+            converted[date] = res.events[date].map(function(e){ return e.type; });
+          });
+          callback(converted);
+        } else { callback({}); }
+      })
+      .catch(function(){ callback({}); });
+  }
+
+  /* GAS未設定時のフォールバック（ダミーデータ） */
+  var dummyEvents = {
+    '2026-07-07':['rice'],
+    '2026-07-08':['rice','link'],
+    '2026-07-09':['rice'],
+    '2026-07-11':['bukatsu'],
+    '2026-07-12':['rice','perro'],
+    '2026-07-14':['rice'],
+    '2026-07-15':['rice','link'],
+    '2026-07-16':['rice','bukatsu'],
+    '2026-07-18':['bukatsu'],
+    '2026-07-23':['rice','link'],
+    '2026-07-25':['bukatsu'],
+    '2026-07-26':['rice','perro'],
+    '2026-07-31':['rice','bukatsu']
+  };
+  var tagColors = {link:'gold',bukatsu:'teal',rice:'blue',perro:'coral'};
+  var dows = ['日','月','火','水','木','金','土'];
+  var today = new Date();
+  var viewY = today.getFullYear(), viewM = today.getMonth();
+
+  function pad(n){ return n<10?'0'+n:''+n; }
+
+  function render(){
+    var wrap = document.getElementById('calWrap');
+    var first = new Date(viewY,viewM,1);
+    var last = new Date(viewY,viewM+1,0);
+    var startDow = first.getDay();
+    var html = '<div class="cal-header"><div class="cal-nav"><button id="calPrev">&#8249;</button></div>'
+      +'<h3>'+(viewM+1)+'月 '+viewY+'</h3>'
+      +'<div class="cal-nav"><button id="calNext">&#8250;</button></div></div>';
+    html += '<div class="cal-grid">';
+    for(var d=0;d<7;d++) html+='<div class="cal-dow">'+dows[d]+'</div>';
+    var prevLast = new Date(viewY,viewM,0).getDate();
+    for(var i=0;i<startDow;i++){
+      html+='<div class="cal-day other">'+(prevLast-startDow+1+i)+'</div>';
+    }
+    for(var d=1;d<=last.getDate();d++){
+      var key = viewY+'-'+pad(viewM+1)+'-'+pad(d);
+      var isToday = (d===today.getDate() && viewM===today.getMonth() && viewY===today.getFullYear());
+      var evts = (gasEvents[key] || dummyEvents[key] || []);
+      var cls = 'cal-day'+(isToday?' today':'')+(evts.length?' has-event':'');
+      html+='<div class="'+cls+'" data-date="'+key+'">'+d;
+      if(evts.length){
+        html+='<div class="cal-dots">';
+        evts.forEach(function(e){ html+='<div class="cal-dot '+(tagColors[e]||'gold')+'"></div>'; });
+        html+='</div>';
+      }
+      html+='</div>';
+    }
+    var remain = (7 - (startDow+last.getDate())%7)%7;
+    for(var i=1;i<=remain;i++) html+='<div class="cal-day other">'+i+'</div>';
+    html+='</div>';
+    wrap.innerHTML = html;
+
+    document.getElementById('calPrev').onclick = function(){ viewM--; if(viewM<0){viewM=11;viewY--;} render(); };
+    document.getElementById('calNext').onclick = function(){ viewM++; if(viewM>11){viewM=0;viewY++;} render(); };
+  }
+  /* GASからデータ取得してからrender */
+  loadGasEvents(function(events){
+    gasEvents = events;
+    render();
+  });
+})();
+</script>
+</body>
+</html>
