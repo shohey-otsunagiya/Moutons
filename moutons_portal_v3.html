@@ -619,5 +619,29 @@
   });
 })();
 </script>
+
+<style>
+.gas-setting-btn {
+  position: fixed; bottom: 20px; right: 20px; z-index: 999;
+  width: 38px; height: 38px; border-radius: 50%; border: none;
+  background: rgba(255,255,255,.13); color: #aaa; font-size: 17px;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+}
+.gas-setting-btn:hover { background: rgba(255,255,255,.25); color: #fff; }
+</style>
+
+<button class="gas-setting-btn" onclick="openGasSetting()" title="GAS接続設定">⚙</button>
+
+<script>
+function openGasSetting() {
+  var current = localStorage.getItem('isai_mouton_gas_url') || '';
+  var url = prompt('GASのデプロイURLを入力してください\n（一度設定すれば次回から不要です）', current);
+  if (url !== null) {
+    localStorage.setItem('isai_mouton_gas_url', url.trim());
+    alert(url.trim() ? '✅ GAS接続設定完了！ページをリロードします。' : '🔌 未接続モードに戻しました');
+    location.reload();
+  }
+}
+</script>
 </body>
 </html>
