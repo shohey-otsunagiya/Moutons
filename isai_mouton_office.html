@@ -829,5 +829,34 @@ function loop(t){
 }
 requestAnimationFrame(loop);
 </script>
+<style>
+.office-gas-btn {
+  position: fixed; bottom: 20px; right: 20px; z-index: 999;
+  width: 38px; height: 38px; border-radius: 50%; border: none;
+  background: rgba(255,255,255,.13); color: #aaa; font-size: 17px;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+}
+.office-gas-btn:hover { background: rgba(255,255,255,.25); color: #fff; }
+</style>
+
+<button class="office-gas-btn" onclick="openOfficeGasSetting()" title="GAS接続設定">⚙</button>
+
+<script>
+function openOfficeGasSetting() {
+  /* portal v3と同じキーも参照して自動入力 */
+  var current = localStorage.getItem('isai_hq_endpoint')
+             || localStorage.getItem('isai_mouton_gas_url')
+             || '';
+  var url = prompt('GASのデプロイURLを入力してください\n（portal v3と同じURLでOK）', current);
+  if (url !== null) {
+    var trimmed = url.trim();
+    localStorage.setItem('isai_hq_endpoint', trimmed);
+    /* portal v3側のキーにも同時保存 */
+    localStorage.setItem('isai_mouton_gas_url', trimmed);
+    alert(trimmed ? '✅ GAS接続完了！ページをリロードします。' : '🔌 未接続モードに戻しました');
+    location.reload();
+  }
+}
+</script>
 </body>
 </html>
