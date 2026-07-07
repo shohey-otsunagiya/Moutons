@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <title>ISAI MOUTON</title>
+<link rel="apple-touch-icon" href="./icon_isai_mouton.png">
+<link rel="icon" href="./icon_isai_mouton.png">
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Michroma&family=Rajdhani:wght@300;500;600;700&family=Noto+Sans+JP:wght@300;500;700&display=swap');
 *{box-sizing:border-box;margin:0;padding:0;}
@@ -66,6 +68,19 @@ button{font-family:inherit;}
 .back-btn{position:fixed;top:28px;left:26px;z-index:60;background:none;border:1px solid #2e4a6688;color:#7fa8d0;font-size:11px;letter-spacing:.2em;padding:8px 16px;cursor:pointer;border-radius:20px;}
 .back-btn:hover{border-color:#409cff;color:#e8f1ff;}
 
+/* ══════ TRANSITION OVERLAY ══════ */
+#transition{position:fixed;inset:0;background:#000;z-index:9999;display:none;align-items:center;justify-content:center;flex-direction:column;}
+#transition.show{display:flex;}
+.trans-text{font-family:'Michroma';font-size:12px;letter-spacing:.4em;text-indent:.4em;color:#7fa8d0;opacity:0;}
+.trans-text.on{animation:transTextIn 1.2s ease forwards;}
+@keyframes transTextIn{0%{opacity:0;transform:translateY(10px);filter:blur(6px);}100%{opacity:1;transform:translateY(0);filter:blur(0);}}
+.trans-flash{position:fixed;inset:0;background:#e8f1ff;opacity:0;pointer-events:none;z-index:10000;}
+.trans-flash.zap{animation:transFlash .5s ease;}
+@keyframes transFlash{0%{opacity:0;}30%{opacity:1;}100%{opacity:0;}}
+.zoom-window{position:fixed;inset:0;background:radial-gradient(circle at center, #e8c98a33 0%, #03050a 70%);opacity:0;z-index:9998;}
+.zoom-window.zoomin{animation:zoomIn 1.4s ease forwards;}
+@keyframes zoomIn{0%{opacity:0;transform:scale(.3);}60%{opacity:1;}100%{opacity:1;transform:scale(3);filter:blur(20px);}}
+
 /* ══════════ 3. FLASHBACK (回想) ══════════ */
 #flashback{display:none;align-items:center;justify-content:center;z-index:80;background:#000;}
 #flashback.show{display:flex;}
@@ -111,6 +126,11 @@ button{font-family:inherit;}
 
 <div class="scanlines"></div>
 <div class="vignette"></div>
+<div class="zoom-window" id="zoomWindow"></div>
+<div class="trans-flash" id="transFlash"></div>
+<div id="transition">
+  <p class="trans-text" id="transText"></p>
+</div>
 
 <!-- ══════ 1. OPENING ══════ -->
 <div class="scene" id="opening">
@@ -133,6 +153,7 @@ button{font-family:inherit;}
   <button class="back-btn hide" id="backFromBuilding" onclick="goOpening()">← EXIT</button>
   <div class="tower-wrap" id="towerWrap"></div>
   <div class="building-hint">FLOOR を選択してください</div>
+  <button onclick="exitToDesk()" style="position:fixed;bottom:30px;right:26px;z-index:22;font-size:11px;letter-spacing:.15em;color:#3d5a78;background:none;border:1px solid #2e4a6688;padding:8px 16px;border-radius:20px;cursor:pointer;">デスクに移動 →</button>
 </div>
 
 <!-- ══════ 3. FLASHBACK ══════ -->
@@ -243,6 +264,57 @@ function goOpening(){
   document.getElementById('building').classList.remove('show');
   document.getElementById('opening').style.display = 'flex';
 }
+
+/* ══════ デスクへ移動（退出演出） ══════ */
+var EXIT_LINES = [
+  'ELEVATOR // DESCENDING',
+  'LOGGING OUT OF FLOOR',
+  'SWITCHING TO DESK MODE'
+];
+function exitToDesk(){
+  var t = document.getElementById('transition');
+  var text = document.getElementById('transText');
+  var flash = document.getElementById('transFlash');
+  text.textContent = EXIT_LINES[Math.floor(Math.random()*EXIT_LINES.length)];
+  text.classList.add('on');
+  t.classList.add('show');
+  setTimeout(function(){ flash.classList.add('zap'); }, 900);
+  sessionStorage.setItem('isai_transition', 'toDesk');
+  setTimeout(function(){ location.href = './isai_mouton_ops.html'; }, 1500);
+}
+
+/* ══════ ビルから戻ってきた時：接近演出のバリエーション ══════ */
+function playBuildingApproach(){
+  var variants = ['zoom', 'fog', 'elevator'];
+  var v = variants[Math.floor(Math.random()*variants.length)];
+  var zw = document.getElementById('zoomWindow');
+  var t = document.getElementById('transition');
+  var text = document.getElementById('transText');
+
+  if(v === 'zoom'){
+    text.textContent = 'APPROACHING TOWER';
+  } else if(v === 'fog'){
+    text.textContent = '霧の中に、灯りが見える';
+  } else {
+    text.textContent = 'ELEVATOR // ASCENDING';
+  }
+  text.classList.add('on');
+  t.classList.add('show');
+  setTimeout(function(){
+    t.classList.remove('show');
+    text.classList.remove('on');
+    goBuilding();
+  }, 1600);
+}
+
+/* 起動時：デスクから戻ってきた場合は直接ビルへ */
+(function(){
+  if(sessionStorage.getItem('isai_transition') === 'fromDesk'){
+    sessionStorage.removeItem('isai_transition');
+    document.getElementById('opening').style.display = 'none';
+    playBuildingApproach();
+  }
+})();
 
 var currentFloor = null;
 function enterFloor(floor){
