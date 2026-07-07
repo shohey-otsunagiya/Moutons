@@ -638,8 +638,7 @@ function openGasSetting() {
   var url = prompt('GASのデプロイURLを入力してください\n（一度設定すれば次回から不要です）', current);
   if (url !== null) {
     localStorage.setItem('isai_mouton_gas_url', url.trim());
-    alert(url.trim() ? '✅ GAS接続設定完了！ページをリロードします。' : '🔌 未接続モードに戻しました');
-    location.reload();
+    alert(url.trim() ? '✅ 設定完了！カレンダーを更新します。' : '🔌 未接続モードに戻しました');
   }
 }
 </script>
