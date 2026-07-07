@@ -6,6 +6,38 @@
 <title>My Mouton</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <style>
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=Zen+Kurenaido&family=Shippori+Mincho:wght@500&display=swap');
+
+/* ══════ OPENING ══════ */
+#mm-opening{position:fixed;inset:0;z-index:9999;background:#141210;display:flex;align-items:center;justify-content:center;flex-direction:column;padding:0 24px;overflow:hidden;font-family:'Cormorant Garamond','Shippori Mincho',serif;}
+#mm-opening.exit{animation:mmExit 1.6s ease forwards;}
+@keyframes mmExit{to{opacity:0;filter:blur(8px);visibility:hidden;}}
+.mm-grain{position:fixed;inset:-50%;width:200%;height:200%;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.35'/%3E%3C/svg%3E");animation:mmGrain .4s steps(4) infinite;pointer-events:none;z-index:2;opacity:.14;}
+@keyframes mmGrain{0%{transform:translate(0,0);}25%{transform:translate(-2%,3%);}50%{transform:translate(3%,-2%);}75%{transform:translate(-3%,-3%);}100%{transform:translate(2%,2%);}}
+.mm-dawn{position:fixed;inset:0;background:radial-gradient(ellipse 120% 90% at 50% 115%, #d4915820 0%, #8a5a3410 35%, transparent 65%);opacity:0;animation:mmDawn 5s ease 1s forwards;}
+@keyframes mmDawn{to{opacity:1;}}
+.mm-dust{position:fixed;width:3px;height:3px;background:#e8c9a0;border-radius:50%;filter:blur(1px);opacity:0;animation:mmDust 12s linear infinite;}
+@keyframes mmDust{0%{opacity:0;transform:translateY(20vh) translateX(0);}15%{opacity:.5;}85%{opacity:.3;}100%{opacity:0;transform:translateY(-70vh) translateX(30px);}}
+.mm-stage{position:relative;z-index:10;display:flex;align-items:center;justify-content:center;flex-direction:column;}
+.mm-whisper{font-family:'Zen Kurenaido',sans-serif;font-size:clamp(11px,3vw,14px);color:#8a7560;letter-spacing:.4em;text-indent:.4em;opacity:0;animation:mmSoft 2.4s ease .8s forwards;margin-bottom:30px;}
+.mm-title{display:flex;gap:.06em;font-size:clamp(44px,11vw,110px);color:#e9dcc9;font-weight:400;font-style:italic;}
+.mm-title span{opacity:0;display:inline-block;animation:mmInk 2.6s cubic-bezier(.22,1,.36,1) forwards;text-shadow:0 2px 40px rgba(212,145,88,.25);}
+@keyframes mmInk{0%{opacity:0;transform:translateY(26px);filter:blur(12px);}100%{opacity:1;transform:translateY(0);filter:blur(0);}}
+.mm-jpsub{font-family:'Shippori Mincho',serif;font-size:clamp(12px,3.4vw,17px);color:#a08b72;letter-spacing:.85em;text-indent:.85em;margin-top:34px;opacity:0;animation:mmSoft 2.8s ease 4s forwards;}
+.mm-line{width:0;height:1px;background:linear-gradient(90deg,transparent,#8a6a4a,transparent);margin-top:26px;animation:mmLineGrow 2.2s ease 4.6s forwards;}
+@keyframes mmLineGrow{to{width:min(260px,60vw);}}
+.mm-date{font-family:'Cormorant Garamond';font-style:italic;font-size:clamp(11px,2.6vw,14px);color:#6a5a48;letter-spacing:.25em;margin-top:22px;opacity:0;animation:mmSoft 2s ease 5.2s forwards;}
+@keyframes mmSoft{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
+.mm-begin{margin-top:56px;background:none;border:none;border-bottom:1px solid #8a6a4a66;color:#c9b299;font-family:'Shippori Mincho',serif;font-size:15px;letter-spacing:.5em;text-indent:.5em;padding:10px 34px;cursor:pointer;opacity:0;animation:mmSoft 2.4s ease 5.8s forwards;transition:all .5s;}
+.mm-begin:hover{color:#e9dcc9;border-bottom-color:#d49158;letter-spacing:.62em;}
+.mm-bar{position:fixed;left:0;right:0;height:11vh;background:#0a0908;z-index:20;transition:transform 2s cubic-bezier(.7,0,.3,1);}
+.mm-bar.top{top:0;} .mm-bar.bottom{bottom:0;}
+.mm-bar.exit.top{transform:translateY(-100%);}
+.mm-bar.exit.bottom{transform:translateY(100%);}
+@media (prefers-reduced-motion: reduce){#mm-opening *{animation-duration:.01s !important;animation-delay:0s !important;}}
+</style>
+
+<style>
 :root {
   --bg: #0e0e12;
   --surface: #1a1a22;
@@ -106,6 +138,56 @@ body { background: var(--bg); color: var(--text); font-family: -apple-system, sa
 </style>
 </head>
 <body>
+
+<!-- ══════ OPENING ══════ -->
+<div class="mm-bar top" id="mmBarTop"></div>
+<div class="mm-bar bottom" id="mmBarBottom"></div>
+<div id="mm-opening">
+  <div class="mm-dawn"></div>
+  <div class="mm-stage">
+    <p class="mm-whisper">いつもの朝に、いつもの記録を</p>
+    <h1 class="mm-title" id="mmTitleText"></h1>
+    <p class="mm-jpsub">わたしの、暮らしの帳面</p>
+    <div class="mm-line"></div>
+    <p class="mm-date" id="mmDateStamp"></p>
+    <button class="mm-begin" onclick="mmBeginApp()">ひらく</button>
+  </div>
+  <div class="mm-grain"></div>
+</div>
+<script>
+(function(){
+  var text = 'My Mouton';
+  var el = document.getElementById('mmTitleText');
+  for(var i=0;i<text.length;i++){
+    var s=document.createElement('span');
+    s.textContent = text[i]===' ' ? '\u00A0' : text[i];
+    s.style.animationDelay = (1.6 + i*0.18)+'s';
+    el.appendChild(s);
+  }
+  var d=new Date();
+  var days=['SUN','MON','TUE','WED','THU','FRI','SAT'];
+  document.getElementById('mmDateStamp').textContent =
+    d.getFullYear()+' . '+String(d.getMonth()+1).padStart(2,'0')+' . '+String(d.getDate()).padStart(2,'0')+'  —  '+days[d.getDay()];
+  for(var i=0;i<14;i++){
+    var p=document.createElement('div');
+    p.className='mm-dust';
+    p.style.left=(10+Math.random()*80)+'vw';
+    p.style.animationDelay=(Math.random()*12)+'s';
+    document.getElementById('mm-opening').appendChild(p);
+  }
+})();
+function mmBeginApp(){
+  document.getElementById('mm-opening').classList.add('exit');
+  document.getElementById('mmBarTop').classList.add('exit');
+  document.getElementById('mmBarBottom').classList.add('exit');
+  setTimeout(function(){
+    document.getElementById('mm-opening').style.display='none';
+    document.getElementById('mmBarTop').style.display='none';
+    document.getElementById('mmBarBottom').style.display='none';
+  }, 1600);
+}
+</script>
+
 
 <!-- ナビゲーション -->
 <nav class="nav">
@@ -281,7 +363,7 @@ body { background: var(--bg); color: var(--text); font-family: -apple-system, sa
 </div>
 
 <script>
-var GAS_URL = localStorage.getItem('my_mouton_gas_url') || '';
+var GAS_URL = 'https://script.google.com/macros/s/AKfycbxC3bwIaLFQeZlvOCs1xHrA5dcRzDhejGY8qFYJuGNjBkWnWlQ2DOK7cJcfKXPsdmi5KQ/exec';
 var today = new Date().toISOString().split('T')[0];
 var selectedMood = 0;
 var debtData = [];

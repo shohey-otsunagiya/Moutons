@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>ISAI MOUTON</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Michroma&family=Rajdhani:wght@300;500;600;700&family=Noto+Sans+JP:wght@300;500;700&display=swap');
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{background:#03050a;color:#e8f1ff;font-family:'Rajdhani','Noto Sans JP',sans-serif;overflow:hidden;height:100vh;width:100vw;}
+button{font-family:inherit;}
+
+.scene{position:fixed;inset:0;}
+.hide{display:none !important;}
+
+/* ══════════ SCANLINE / VIGNETTE (常時) ══════════ */
+.scanlines{position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent 0 2px,rgba(0,0,0,.22) 2px 4px);pointer-events:none;z-index:500;opacity:.45;}
+.vignette{position:fixed;inset:0;background:radial-gradient(ellipse at center,transparent 45%,rgba(0,0,0,.88) 100%);pointer-events:none;z-index:499;}
+
+/* ══════════ 1. OPENING ══════════ */
+#opening{display:flex;align-items:center;justify-content:center;flex-direction:column;z-index:10;}
+.grid-floor{position:fixed;bottom:-10%;left:-50%;width:200%;height:60%;background:linear-gradient(transparent 0%, rgba(64,156,255,.06) 100%),repeating-linear-gradient(90deg,rgba(64,156,255,.14) 0 1px,transparent 1px 60px),repeating-linear-gradient(0deg,rgba(64,156,255,.14) 0 1px,transparent 1px 60px);transform:perspective(500px) rotateX(60deg);opacity:0;animation:gridmove 14s linear infinite, gridin 2s ease 1.2s forwards;}
+@keyframes gridmove{to{background-position:0 0,0 60px,0 60px;}}
+@keyframes gridin{to{opacity:1;}}
+.pretitle{font-weight:300;font-size:clamp(10px,2.6vw,14px);letter-spacing:1.1em;color:#5a7a9a;text-transform:uppercase;opacity:0;animation:fadeup 1.4s ease 1s forwards;margin-bottom:18px;text-indent:1.1em;}
+.o-title{font-family:'Michroma';font-size:clamp(34px,9vw,92px);color:#e8f1ff;letter-spacing:.12em;text-indent:.12em;position:relative;opacity:0;animation:titlein 2.2s cubic-bezier(.16,1,.3,1) 1.8s forwards;text-shadow:0 0 40px rgba(64,156,255,.5),0 0 120px rgba(64,156,255,.25);}
+@keyframes titlein{0%{opacity:0;transform:scale(1.5);filter:blur(24px);letter-spacing:.6em;}100%{opacity:1;transform:scale(1);filter:blur(0);letter-spacing:.12em;}}
+.o-title::after{content:'';position:absolute;inset:0;background:linear-gradient(105deg,transparent 40%,rgba(255,255,255,.9) 50%,transparent 60%);background-size:250% 100%;background-position:200% 0;mix-blend-mode:overlay;animation:sweep 1.6s ease 3.6s forwards;}
+@keyframes sweep{to{background-position:-100% 0;}}
+.o-sub{font-weight:300;font-size:clamp(11px,3vw,16px);color:#8aa8c8;letter-spacing:.55em;text-indent:.55em;margin-top:26px;opacity:0;animation:fadeup 1.6s ease 3.2s forwards;}
+.o-tag{font-weight:500;font-size:clamp(9px,2.2vw,12px);color:#3d5a78;letter-spacing:.35em;text-indent:.35em;text-transform:uppercase;margin-top:14px;opacity:0;animation:fadeup 1.6s ease 3.9s forwards;}
+@keyframes fadeup{from{opacity:0;transform:translateY(16px);}to{opacity:1;transform:translateY(0);}}
+.hud{position:fixed;font-weight:500;font-size:10px;letter-spacing:.25em;color:#2e4a66;opacity:0;animation:fadeup 1s ease 4.4s forwards;z-index:11;}
+.hud-tl{top:22px;left:26px;} .hud-tr{top:22px;right:26px;text-align:right;}
+.hud-bl{bottom:22px;left:26px;} .hud-br{bottom:22px;right:26px;text-align:right;}
+.enter-btn{margin-top:60px;padding:13px 54px;background:transparent;border:1px solid #409cff55;color:#9cc4ea;font-weight:700;font-size:14px;letter-spacing:.5em;text-indent:.5em;cursor:pointer;opacity:0;animation:fadeup 1.4s ease 4.8s forwards, pulse 2.4s ease 6s infinite;transition:all .3s;}
+.enter-btn:hover{background:rgba(64,156,255,.12);border-color:#409cff;box-shadow:0 0 30px rgba(64,156,255,.3);}
+@keyframes pulse{0%,100%{border-color:#409cff55;}50%{border-color:#409cffcc;}}
+.particle{position:fixed;width:2px;height:2px;background:#409cff;border-radius:50%;opacity:0;animation:float 8s linear infinite;}
+@keyframes float{0%{opacity:0;transform:translateY(100vh);}10%{opacity:.7;}90%{opacity:.4;}100%{opacity:0;transform:translateY(-10vh);}}
+
+/* ══════════ 2. BUILDING (摩天楼) ══════════ */
+#building{display:none;align-items:flex-end;justify-content:center;z-index:20;background:radial-gradient(ellipse at 50% 100%, #0a1420 0%, #03050a 70%);}
+#building.show{display:flex;}
+.fog-layer{position:fixed;inset:0;background:linear-gradient(0deg,rgba(10,20,32,.5) 0%,transparent 40%);pointer-events:none;z-index:21;}
+.tower-wrap{position:relative;width:min(70vw,340px);height:82vh;display:flex;flex-direction:column-reverse;transform:scale(.86);opacity:0;animation:towerRise 2.6s cubic-bezier(.16,1,.3,1) .3s forwards;}
+@keyframes towerRise{to{transform:scale(1);opacity:1;}}
+.floor-slab{position:relative;width:100%;flex:1;background:linear-gradient(180deg,#0f1a28,#0a121c);border-top:1px solid #1c2c40;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:background .4s;}
+.floor-slab:hover{background:linear-gradient(180deg,#16263a,#0f1a28);}
+.floor-slab.locked{cursor:not-allowed;opacity:.35;}
+.floor-slab.locked:hover{background:linear-gradient(180deg,#0f1a28,#0a121c);}
+.floor-windows{position:absolute;inset:6px 10px;display:grid;grid-template-columns:repeat(6,1fr);gap:4px;}
+.win{background:#132132;border-radius:1px;transition:background .6s,box-shadow .6s;}
+.win.lit{background:#e8c98a;box-shadow:0 0 8px #e8c98a99;animation:flicker 5s ease-in-out infinite;}
+@keyframes flicker{0%,100%{opacity:1;}50%{opacity:.82;}}
+.floor-label{position:relative;z-index:5;font-size:11px;letter-spacing:.2em;color:#7fa8d0;background:rgba(3,7,12,.55);padding:4px 12px;border-radius:20px;pointer-events:none;text-align:center;}
+.floor-slab.locked .floor-label{color:#4a5a6a;}
+.floor-slab .floor-num{font-family:'Michroma';font-size:9px;color:#3d5a78;letter-spacing:.15em;display:block;margin-bottom:2px;}
+.roof{width:60%;height:14px;background:#1c2c40;margin:0 auto;border-radius:3px 3px 0 0;position:relative;bottom:0;}
+.antenna{position:absolute;top:-40px;left:50%;width:2px;height:40px;background:#3d5a78;}
+.antenna::after{content:'';position:absolute;top:-3px;left:-2px;width:6px;height:6px;background:#ff5555;border-radius:50%;box-shadow:0 0 10px #ff5555;animation:blink 2s ease-in-out infinite;}
+@keyframes blink{0%,100%{opacity:1;}50%{opacity:.2;}}
+.building-title{position:fixed;top:34px;left:50%;transform:translateX(-50%);font-family:'Michroma';font-size:13px;letter-spacing:.4em;text-indent:.4em;color:#5a7a9a;z-index:22;}
+.building-hint{position:fixed;bottom:30px;left:50%;transform:translateX(-50%);font-size:12px;letter-spacing:.15em;color:#3d5a78;z-index:22;}
+.back-btn{position:fixed;top:28px;left:26px;z-index:60;background:none;border:1px solid #2e4a6688;color:#7fa8d0;font-size:11px;letter-spacing:.2em;padding:8px 16px;cursor:pointer;border-radius:20px;}
+.back-btn:hover{border-color:#409cff;color:#e8f1ff;}
+
+/* ══════════ 3. FLASHBACK (回想) ══════════ */
+#flashback{display:none;align-items:center;justify-content:center;z-index:80;background:#000;}
+#flashback.show{display:flex;}
+.fb-frag{position:absolute;text-align:center;max-width:60vw;opacity:0;}
+.fb-eyebrow{font-size:10px;letter-spacing:.4em;text-indent:.4em;color:#5a7a9a;margin-bottom:8px;}
+.fb-text{font-family:'Noto Sans JP';font-weight:300;font-size:clamp(15px,3vw,22px);color:#e8f1ff;line-height:1.6;}
+.fb-num{font-family:'Michroma';font-size:clamp(24px,5vw,42px);color:#e8c98a;margin-top:4px;text-shadow:0 0 30px rgba(232,201,138,.4);}
+@keyframes fbglitch{
+  0%{opacity:0;filter:blur(0) saturate(3);transform:translate(calc(var(--ax,0%) + var(--gx,0px)),var(--gy,0px)) skewX(6deg);clip-path:inset(10% 0 60% 0);}
+  4%{opacity:1;filter:blur(0) saturate(3);transform:translate(calc(var(--ax,0%) + var(--gx,0px) - 6px),var(--gy,0px)) skewX(-4deg);clip-path:inset(40% 0 20% 0);}
+  8%{opacity:.3;clip-path:inset(0 0 80% 0);transform:translate(var(--ax,0%),0) skewX(0deg);}
+  12%{opacity:1;filter:blur(0) saturate(1);clip-path:inset(0 0 0 0);transform:translate(var(--ax,0%),0);}
+  70%{opacity:1;filter:blur(0);}
+  100%{opacity:0;filter:blur(14px);transform:translate(var(--ax,0%),0) scale(1.04);}
+}
+.fb-grain{position:fixed;inset:-40%;width:180%;height:180%;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.4'/%3E%3C/svg%3E");animation:grain .35s steps(4) infinite;pointer-events:none;opacity:.16;z-index:81;}
+@keyframes grain{0%{transform:translate(0,0);}25%{transform:translate(-2%,2%);}50%{transform:translate(2%,-2%);}75%{transform:translate(-2%,-2%);}100%{transform:translate(2%,2%);}}
+.fb-skip{position:fixed;bottom:30px;right:30px;z-index:90;background:none;border:none;color:#3d5a78;font-size:11px;letter-spacing:.2em;cursor:pointer;}
+
+/* ══════════ 4. FLOOR DASHBOARD ══════════ */
+#floor{display:none;z-index:30;overflow-y:auto;padding:70px 20px 40px;}
+#floor.show{display:block;}
+.floor-header{text-align:center;margin-bottom:28px;}
+.fh-eyebrow{font-size:10px;letter-spacing:.35em;text-indent:.35em;margin-bottom:8px;}
+.fh-title{font-family:'Michroma';font-size:clamp(20px,5vw,32px);letter-spacing:.08em;}
+.fh-line{width:60px;height:1px;background:currentColor;opacity:.4;margin:14px auto;}
+.floor-body{max-width:520px;margin:0 auto;}
+.dept-card{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:16px 18px;margin-bottom:12px;}
+.dept-card-title{font-size:10px;letter-spacing:.2em;color:#7fa8d0;margin-bottom:10px;text-transform:uppercase;}
+.staff-row{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid rgba(255,255,255,.06);}
+.staff-row:last-child{border-bottom:none;}
+.staff-name{font-size:14px;font-weight:600;}
+.staff-role{font-size:11px;color:#7a8a9a;margin-top:1px;}
+.staff-status{font-size:11px;padding:3px 10px;border-radius:20px;background:rgba(64,156,255,.12);color:#9cc4ea;}
+.kpi-mini{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.kpi-mini div{background:rgba(255,255,255,.03);border-radius:10px;padding:12px;text-align:center;}
+.kpi-mini .n{font-family:'Michroma';font-size:18px;color:#e8c98a;}
+.kpi-mini .l{font-size:10px;color:#7a8a9a;margin-top:4px;letter-spacing:.1em;}
+.empty-dim{text-align:center;color:#4a5a6a;font-size:13px;padding:24px 0;}
+</style>
+</head>
+<body>
+
+<div class="scanlines"></div>
+<div class="vignette"></div>
+
+<!-- ══════ 1. OPENING ══════ -->
+<div class="scene" id="opening">
+  <div class="grid-floor"></div>
+  <p class="pretitle">Autonomous Profit Company</p>
+  <h1 class="o-title">ISAI MOUTON</h1>
+  <p class="o-sub">異 才 ・ 羊 の 皮 を 被 っ た 頭 脳</p>
+  <p class="o-tag">Time × Money — Fastest Route to Surplus</p>
+  <button class="enter-btn" onclick="goBuilding()">ENTER HQ</button>
+  <div class="hud hud-tl">ISAI://MOUTON_HQ<br>SYS.STATUS — ONLINE</div>
+  <div class="hud hud-tr">EXEC UNIT: SHOHEY<br>MODE: PROFIT_PURSUIT</div>
+  <div class="hud hud-bl">EST. 2026 — CHIBA / KASHIWA</div>
+  <div class="hud hud-br">CLASSIFIED // LEVEL 3</div>
+</div>
+
+<!-- ══════ 2. BUILDING ══════ -->
+<div class="scene" id="building">
+  <div class="fog-layer"></div>
+  <div class="building-title">ISAI MOUTON HEADQUARTERS</div>
+  <button class="back-btn hide" id="backFromBuilding" onclick="goOpening()">← EXIT</button>
+  <div class="tower-wrap" id="towerWrap"></div>
+  <div class="building-hint">FLOOR を選択してください</div>
+</div>
+
+<!-- ══════ 3. FLASHBACK ══════ -->
+<div class="scene" id="flashback">
+  <div class="fb-grain"></div>
+  <div id="fbContent"></div>
+  <button class="fb-skip" onclick="skipFlashback()">SKIP ›</button>
+</div>
+
+<!-- ══════ 4. FLOOR DASHBOARD ══════ -->
+<div class="scene" id="floor">
+  <button class="back-btn" onclick="goBuilding()">← ROOF</button>
+  <div class="floor-header">
+    <p class="fh-eyebrow" id="fhEyebrow"></p>
+    <h2 class="fh-title" id="fhTitle"></h2>
+    <div class="fh-line"></div>
+  </div>
+  <div class="floor-body" id="floorBody"></div>
+</div>
+
+<script>
+/* ══════ GAS 接続 ══════ */
+var GAS_URL = 'https://script.google.com/macros/s/AKfycbxC3bwIaLFQeZlvOCs1xHrA5dcRzDhejGY8qFYJuGNjBkWnWlQ2DOK7cJcfKXPsdmi5KQ/exec';
+var LIVE = null;
+function syncData(cb){
+  fetch(GAS_URL + '?action=getAll', {cache:'no-store'})
+    .then(function(r){return r.json();})
+    .then(function(res){ LIVE = (res && res.ok) ? res.data : null; cb && cb(); })
+    .catch(function(){ cb && cb(); });
+}
+
+/* ══════ フロア定義 ══════ */
+var FLOORS = [
+  {
+    id:'hq', num:'2F', name:'本社 — 統括', color:'#409cff', on:true,
+    roles:[{name:'クロッピー',role:'COO / 戦略統括'},{name:'秘書',role:'案内・タスク整理'}],
+    flashback:[
+      {eyebrow:'ORIGIN', text:'ひとりで始まった会社に、\nAI社員たちが加わっていった。'},
+      {eyebrow:'MISSION', text:'今の事業に固執しない。\n最短最速で、時間とお金を取り戻す。'},
+    ]
+  },
+  {
+    id:'link', num:'3F', name:'LINK社 — おつなぎ屋', color:'#e8a24a', on:true,
+    roles:[{name:'ツムギ',role:'Threads運用'},{name:'ツナグ',role:'DM・アウトリーチ'},{name:'ミル',role:'分析'}],
+    flashback:[
+      {eyebrow:'HEADLINE', text:'"名刺百枚より、一言の紹介。"'},
+      {eyebrow:'GOAL', num:'100', text:'8月末までの会員目標人数'},
+      {eyebrow:'PIPELINE', num:'43+12', text:'優先リストと保留リストの見込み客'},
+    ]
+  },
+  {
+    id:'zero', num:'4F', name:'ゼロちゃん社', color:'#e07a9c', on:true,
+    roles:[{name:'ゼロちゃん',role:'編集長 / SNS'},{name:'カケル',role:'note執筆'}],
+    flashback:[
+      {eyebrow:'RETRY', text:'一年前、200人のフォロワーと\n0円の売上で終わった挑戦。'},
+      {eyebrow:'THIS TIME', text:'商品がある。狙う相手が違う。\n同じ轍は踏まない。'},
+      {eyebrow:'TRACTION', num:'29', text:'ある投稿に届いた返信の数'},
+    ]
+  },
+  {
+    id:'bk', num:'5F', name:'BUKATSU社', color:'#6ac47a', on:true,
+    roles:[{name:'サポ',role:'コミュニティ運営'},{name:'コーチ',role:'プログラム設計'}],
+    flashback:[
+      {eyebrow:'FOUNDATION', num:'130', text:'ゼロから10ヶ月で集まった会員数。'},
+      {eyebrow:'STRUCTURE', text:'GAS + GitHub Pages で組んだ\n独自の運営システムが今日も動く。'},
+      {eyebrow:'NOW', text:'待機は終わった。\nこのフロアが、動き出す。'},
+    ]
+  },
+  {
+    id:'pm', num:'6F', name:'Perro Mouton', color:'#9a94e0', on:false, tag:'待機中',
+    roles:[{name:'レンズ',role:'撮影ディレクション'},{name:'エディト',role:'編集・納品'}],
+    flashback:[
+      {eyebrow:'MEMORY', text:'飛鳥IIの甲板で、\n1.5年間シャッターを切り続けた日々。'},
+      {eyebrow:'STANDBY', text:'次の被写体を待つ、静かなフロア。'},
+    ]
+  }
+];
+
+/* ══════ 摩天楼を描画 ══════ */
+function buildTower(){
+  var wrap = document.getElementById('towerWrap');
+  wrap.innerHTML = '<div class="roof"><div class="antenna"></div></div>';
+  FLOORS.forEach(function(f, i){
+    var slab = document.createElement('div');
+    slab.className = 'floor-slab' + (f.on ? '' : ' locked');
+    slab.style.animation = 'fadeup .8s ease '+(0.6+i*0.15)+'s both';
+    var winsHtml = '';
+    for(var w=0; w<12; w++){
+      var lit = f.on && Math.random() > 0.35;
+      winsHtml += '<div class="win'+(lit?' lit':'')+'"'+(lit?' style="animation-delay:'+(Math.random()*4)+'s"':'')+'></div>';
+    }
+    slab.innerHTML = '<div class="floor-windows">'+winsHtml+'</div><div class="floor-label"><span class="floor-num">'+f.num+'</span>'+f.name+(f.tag?'<br><span style="font-size:9px;opacity:.7">'+f.tag+'</span>':'')+'</div>';
+    if(f.on) slab.onclick = (function(floor){ return function(){ enterFloor(floor); }; })(f);
+    wrap.appendChild(slab);
+  });
+}
+
+/* ══════ シーン遷移 ══════ */
+function goBuilding(){
+  document.getElementById('opening').style.display = 'none';
+  document.getElementById('floor').classList.remove('show');
+  document.getElementById('building').classList.add('show');
+  document.getElementById('backFromBuilding').classList.remove('hide');
+  if(!document.getElementById('towerWrap').children.length) buildTower();
+  if(!LIVE) syncData();
+}
+function goOpening(){
+  document.getElementById('building').classList.remove('show');
+  document.getElementById('opening').style.display = 'flex';
+}
+
+var currentFloor = null;
+function enterFloor(floor){
+  currentFloor = floor;
+  document.getElementById('building').classList.remove('show');
+  playFlashback(floor);
+}
+
+/* ══════ 回想演出（ランダム配置・時差・グリッチ） ══════ */
+var FB_ZONES = [
+  {top:'14%', left:'8%',  align:'left'},
+  {top:'12%', left:'62%', align:'right'},
+  {top:'42%', left:'4%',  align:'left'},
+  {top:'46%', left:'58%', align:'right'},
+  {top:'70%', left:'10%', align:'left'},
+  {top:'72%', left:'55%', align:'right'},
+  {top:'26%', left:'34%', align:'center'},
+  {top:'58%', left:'30%', align:'center'},
+];
+function shuffle(a){ a=a.slice(); for(var i=a.length-1;i>0;i--){ var j=Math.floor(Math.random()*(i+1)); var t=a[i]; a[i]=a[j]; a[j]=t; } return a; }
+
+function playFlashback(floor){
+  var fb = document.getElementById('flashback');
+  var content = document.getElementById('fbContent');
+  content.innerHTML = '';
+  fb.classList.add('show');
+  var frags = floor.flashback;
+  var zones = shuffle(FB_ZONES);
+  var totalDuration = 0;
+
+  frags.forEach(function(f, i){
+    var zone = zones[i % zones.length];
+    var delay = i * 550 + Math.random()*200;      // ぱぱぱっと時差
+    var dur = 2600 + Math.random()*500;
+    totalDuration = Math.max(totalDuration, delay + dur);
+
+    var el = document.createElement('div');
+    el.className = 'fb-frag';
+    el.style.top = zone.top;
+    el.style.left = zone.left;
+    el.style.textAlign = zone.align;
+    var axVal = zone.align==='left' ? '0%' : zone.align==='right' ? '-100%' : '-50%';
+    el.style.setProperty('--ax', axVal);
+    el.style.setProperty('--gx', (Math.random()*10-5)+'px');
+    el.style.setProperty('--gy', (Math.random()*10-5)+'px');
+    el.style.color = floor.color;
+    el.innerHTML = '<p class="fb-eyebrow">'+f.eyebrow+'</p>'+(f.num?'<p class="fb-num">'+f.num+'</p>':'')+'<p class="fb-text">'+f.text.replace(/\n/g,'<br>')+'</p>';
+    el.style.animation = 'fbglitch '+(dur/1000)+'s ease forwards';
+    el.style.animationDelay = (delay/1000)+'s';
+    content.appendChild(el);
+  });
+
+  var fbTimer = setTimeout(function(){
+    fb.classList.remove('show');
+    content.innerHTML = '';
+    showFloor(floor);
+  }, totalDuration + 300);
+  window._fbTimer = fbTimer;
+}
+function skipFlashback(){
+  if(window._fbTimer) clearTimeout(window._fbTimer);
+  document.getElementById('flashback').classList.remove('show');
+  document.getElementById('fbContent').innerHTML = '';
+  if(currentFloor) showFloor(currentFloor);
+}
+
+/* ══════ フロアダッシュボード ══════ */
+function showFloor(floor){
+  document.getElementById('floor').classList.add('show');
+  document.getElementById('floor').style.color = floor.color;
+  document.getElementById('fhEyebrow').textContent = floor.num + ' FLOOR';
+  document.getElementById('fhEyebrow').style.color = floor.color;
+  document.getElementById('fhTitle').textContent = floor.name;
+  document.getElementById('fhTitle').style.color = '#e8f1ff';
+
+  var html = '';
+  html += '<div class="dept-card"><p class="dept-card-title">STAFF</p>';
+  floor.roles.forEach(function(r){
+    var liveMatch = LIVE && LIVE.staff ? LIVE.staff.find(function(s){ return s.name === r.name; }) : null;
+    var status = liveMatch ? (liveMatch.status || '稼働中') : '稼働中';
+    html += '<div class="staff-row"><div><p class="staff-name">'+r.name+'</p><p class="staff-role">'+r.role+'</p></div><span class="staff-status">'+status+'</span></div>';
+  });
+  html += '</div>';
+
+  if(LIVE && LIVE.tasks && LIVE.tasks.length){
+    html += '<div class="dept-card"><p class="dept-card-title">TASKS</p>';
+    var relevant = LIVE.tasks.slice(0,4);
+    relevant.forEach(function(t){
+      html += '<div class="staff-row"><div><p class="staff-name" style="font-size:13px">'+(t.title||'')+'</p><p class="staff-role">'+(t.assignee||'')+'</p></div><span class="staff-status">'+(t.status||'')+'</span></div>';
+    });
+    html += '</div>';
+  } else {
+    html += '<div class="dept-card"><p class="dept-card-title">TASKS</p><p class="empty-dim">現在このフロアに紐づくタスクはありません</p></div>';
+  }
+
+  document.getElementById('floorBody').innerHTML = html;
+}
+
+/* ══════ パーティクル ══════ */
+for(var i=0;i<24;i++){
+  var p=document.createElement('div');
+  p.className='particle';
+  p.style.left=Math.random()*100+'vw';
+  p.style.animationDelay=(Math.random()*8)+'s';
+  p.style.animationDuration=(6+Math.random()*6)+'s';
+  document.body.appendChild(p);
+}
+</script>
+</body>
+</html>
