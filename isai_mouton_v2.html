@@ -77,7 +77,7 @@ button{font-family:inherit;}
 .trans-flash{position:fixed;inset:0;background:#e8f1ff;opacity:0;pointer-events:none;z-index:10000;}
 .trans-flash.zap{animation:transFlash .5s ease;}
 @keyframes transFlash{0%{opacity:0;}30%{opacity:1;}100%{opacity:0;}}
-.zoom-window{position:fixed;inset:0;background:radial-gradient(circle at center, #e8c98a33 0%, #03050a 70%);opacity:0;z-index:9998;}
+.zoom-window{position:fixed;inset:0;background:radial-gradient(circle at center, #e8c98a33 0%, #03050a 70%);opacity:0;z-index:9998;pointer-events:none;}
 .zoom-window.zoomin{animation:zoomIn 1.4s ease forwards;}
 @keyframes zoomIn{0%{opacity:0;transform:scale(.3);}60%{opacity:1;}100%{opacity:1;transform:scale(3);filter:blur(20px);}}
 
