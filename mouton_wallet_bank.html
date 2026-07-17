@@ -310,7 +310,6 @@
     <button class="active" data-type="expense">支出</button>
     <button data-type="income">収入</button>
     <button data-type="debt">借入返済</button>
-    <button data-type="rice">Ricework</button>
   </div>
 
   <div id="formExpense" class="entryForm">
@@ -335,11 +334,6 @@
     <div class="field"><label>返済額</label><input type="number" placeholder="0" id="db-amt"></div>
   </div>
 
-  <div id="formRice" class="entryForm" style="display:none">
-    <div class="field"><label>日付</label><input type="date"></div>
-    <div class="field"><label>開始 - 終了</label><input type="text" placeholder="9:00 - 17:00"></div>
-  </div>
-
   <button class="save-btn" onclick="saveEntry()">記帳する</button>
 </div>
 
@@ -350,7 +344,7 @@
   // CONFIG — デプロイ後にここへGASのウェブアプリURLを貼る
   // ────────────────────────────────
   const CONFIG = {
-    GAS_URL: 'PASTE_YOUR_GAS_WEB_APP_URL_HERE'
+    GAS_URL: 'https://script.google.com/macros/s/AKfycbyjvSt1sVdP6mlatlIiaW0T6SsSboqdywBRK0tJSILyDJmmz9F5CZneJl4_3xmvxJxv-Q/exec'
   };
 
   const yen = n => '¥' + Math.round(n).toLocaleString();
@@ -558,7 +552,7 @@
     document.querySelectorAll('#segType button').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
     document.querySelectorAll('.entryForm').forEach(f => f.style.display = 'none');
-    const map = {expense:'formExpense', income:'formIncome', debt:'formDebt', rice:'formRice'};
+    const map = {expense:'formExpense', income:'formIncome', debt:'formDebt'};
     document.getElementById(map[btn.dataset.type]).style.display = 'block';
   });
 
@@ -581,9 +575,6 @@
         const amt = Number(document.getElementById('db-amt').value);
         if (!amt || !debtId) return;
         await gasPost('addDebtPayment', { date: today, debtId, amount: amt });
-      } else if (activeType === 'rice'){
-        // 簡易版：日付のみ即時記録、開始/終了は別途スプシで詳細入力を想定
-        await gasPost('addRicework', { date: today, attendance: '◯' });
       }
       closeSheet();
       const t = document.getElementById('toast');
