@@ -339,6 +339,19 @@
 
 <div class="toast" id="toast">記帳しました</div>
 
+<div class="scrim" id="editScrim" onclick="closeDebtEdit()"></div>
+<div class="sheet" id="editSheet">
+  <div class="grabber"></div>
+  <div class="card-head" style="margin-bottom:16px;">
+    <h3 id="editDebtName" style="font-size:16px;">負債を編集</h3>
+  </div>
+  <div class="field"><label>残高</label><input type="number" placeholder="0" id="edit-remaining"></div>
+  <div class="field"><label>月々返済額</label><input type="number" placeholder="0" id="edit-monthly"></div>
+  <div class="field"><label>年利(%)</label><input type="number" step="0.01" placeholder="0" id="edit-rate"></div>
+  <div class="field"><label>備考</label><input type="text" placeholder="メモ" id="edit-note"></div>
+  <button class="save-btn" onclick="saveDebtEdit()">保存する</button>
+</div>
+
 <script>
   // ────────────────────────────────
   // CONFIG — デプロイ後にここへGASのウェブアプリURLを貼る
@@ -475,7 +488,7 @@
         return;
       }
       el.innerHTML = d.debts.map(deb => `
-        <div class="debt-card">
+        <div class="debt-card" onclick="openDebtEdit('${deb.id}')" style="cursor:pointer;">
           <div class="debt-top"><span class="name">${deb.name}</span><span class="kind">${deb.kind || ''}</span></div>
           <div class="debt-nums"><span class="rem">${yen(deb.remaining)}</span><span class="of">/ ${yen(deb.principal)}</span></div>
           <div class="debt-bar"><div style="width:${deb.progressPct}%"></div></div>
@@ -545,6 +558,52 @@
   const sheet = document.getElementById('sheet');
   function openSheet(){ scrim.classList.add('open'); sheet.classList.add('open'); }
   function closeSheet(){ scrim.classList.remove('open'); sheet.classList.remove('open'); }
+
+  // ---- debt edit sheet ----
+  const editScrim = document.getElementById('editScrim');
+  const editSheet = document.getElementById('editSheet');
+  let editingDebtId = null;
+
+  function openDebtEdit(debtId){
+    const deb = debtCache.find(d => String(d.id) === String(debtId));
+    if (!deb) return;
+    editingDebtId = debtId;
+    document.getElementById('editDebtName').textContent = deb.name + 'を編集';
+    document.getElementById('edit-remaining').value = deb.remaining;
+    document.getElementById('edit-monthly').value = deb.monthlyPayment;
+    document.getElementById('edit-rate').value = deb.annualRate;
+    document.getElementById('edit-note').value = deb.note || '';
+    editScrim.classList.add('open');
+    editSheet.classList.add('open');
+  }
+
+  function closeDebtEdit(){
+    editScrim.classList.remove('open');
+    editSheet.classList.remove('open');
+    editingDebtId = null;
+  }
+
+  async function saveDebtEdit(){
+    if (!editingDebtId) return;
+    try {
+      await gasPost('updateDebt', {
+        debtId: editingDebtId,
+        remaining: document.getElementById('edit-remaining').value,
+        monthlyPayment: document.getElementById('edit-monthly').value,
+        annualRate: document.getElementById('edit-rate').value,
+        note: document.getElementById('edit-note').value
+      });
+      closeDebtEdit();
+      const t = document.getElementById('toast');
+      t.classList.add('show');
+      setTimeout(() => t.classList.remove('show'), 1800);
+      loadDebts();
+      loadDashboard();
+    } catch (err) {
+      console.error('saveDebtEdit failed', err);
+      alert('保存に失敗しました。');
+    }
+  }
 
   document.getElementById('segType').addEventListener('click', (e) => {
     const btn = e.target.closest('button');
