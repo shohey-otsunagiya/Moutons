@@ -326,6 +326,7 @@ function MoutonsDashboard() {
   const GAS_URL = 'https://script.google.com/macros/s/AKfycbwS99nXzXJa8g6QElQYBkXFCoPYvNArmbhbh7z3yNNWmlGbuCHaC717SZ9kcbC5nH3L5g/exec';
   const [liveContent, setLiveContent] = useState(null); // getDailyContent結果
   const [liveSummary, setLiveSummary] = useState(null); // getDailySummary結果
+  const [liveSchedule, setLiveSchedule] = useState(null); // getTodaySchedule結果
   const [liveLoading, setLiveLoading] = useState(true);
   const [liveError, setLiveError] = useState(false);
   const [saveStatus, setSaveStatus] = useState(''); // '' | 'saving' | 'saved' | 'error'
@@ -375,11 +376,14 @@ function MoutonsDashboard() {
   useEffect(() => {
     const load = async () => {
       try {
-        const [contentRes, summaryRes, postsRes] = await Promise.all([fetch(`${GAS_URL}?action=getDailyContent`).then(r => r.json()).catch(() => null), fetch(`${GAS_URL}?action=getDailySummary`).then(r => r.json()).catch(() => null), fetch(`${GAS_URL}?action=getRecentPosts&limit=10`).then(r => r.json()).catch(() => null)]);
+        const [contentRes, summaryRes, postsRes, scheduleRes] = await Promise.all([fetch(`${GAS_URL}?action=getDailyContent`).then(r => r.json()).catch(() => null), fetch(`${GAS_URL}?action=getDailySummary`).then(r => r.json()).catch(() => null), fetch(`${GAS_URL}?action=getRecentPosts&limit=10`).then(r => r.json()).catch(() => null), fetch(`${GAS_URL}?action=getTodaySchedule`).then(r => r.json()).catch(() => null)]);
         if (contentRes && contentRes.status === 'ok') setLiveContent(contentRes.content);
         if (summaryRes && summaryRes.status === 'ok') setLiveSummary(summaryRes.summary);
         if (postsRes && postsRes.status === 'ok' && postsRes.posts && postsRes.posts.length) {
           setSavedPosts(postsRes.posts);
+        }
+        if (scheduleRes && scheduleRes.status === 'ok' && Array.isArray(scheduleRes.events)) {
+          setLiveSchedule(scheduleRes.events);
         }
       } catch (err) {
         setLiveError(true);
@@ -506,11 +510,13 @@ function MoutonsDashboard() {
   const DAY_START = 5; // 05:00
   const DAY_END = 25; // 25:00 = 翌1:00（延長ゾーンの限界ライン）
   const EXT_ZONE = 22; // 22:00以降は延長ゾーン
-  const scheduleEvents = [{
+  const fallbackScheduleEvents = [{
     title: 'もずくさんのお店決起会',
     start: 13,
     end: 15
   }];
+  const scheduleEvents = liveSchedule && liveSchedule.length ? liveSchedule : fallbackScheduleEvents;
+  const scheduleIsLive = !!(liveSchedule && liveSchedule.length);
   const toHM = h => {
     const hh = Math.floor(h) % 24;
     const mm = Math.round(h % 1 * 60);
@@ -966,11 +972,34 @@ function MoutonsDashboard() {
     style: labelStyle
   }, "Today's Schedule"), /*#__PURE__*/React.createElement("div", {
     style: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: '8px'
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    style: {
+      display: 'inline-flex',
+      alignItems: 'center',
+      gap: '4px',
+      fontFamily: "'Inter', sans-serif",
+      fontSize: '9px',
+      color: scheduleIsLive ? '#c8a86b' : '#5a5854',
+      letterSpacing: '0.04em'
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    style: {
+      width: '5px',
+      height: '5px',
+      borderRadius: '50%',
+      background: scheduleIsLive ? '#c8a86b' : '#5a5854'
+    }
+  }), scheduleIsLive ? 'カレンダー同期' : '仮データ'), /*#__PURE__*/React.createElement("div", {
+    style: {
       fontFamily: "'Inter', sans-serif",
       fontSize: '10px',
       color: '#8d8b86'
     }
-  }, "05:00 \u8D77\u70B9")), /*#__PURE__*/React.createElement("div", {
+  }, "05:00 \u8D77\u70B9"))), /*#__PURE__*/React.createElement("div", {
     style: {
       display: 'flex',
       flexDirection: 'column',
