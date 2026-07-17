@@ -1,0 +1,9 @@
+{
+  "name": "Mouton's",
+  "short_name": "Mouton's",
+  "start_url": "./dashboard.html",
+  "display": "standalone",
+  "background_color": "#17171a",
+  "theme_color": "#17171a",
+  "icons": []
+}
