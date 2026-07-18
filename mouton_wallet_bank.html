@@ -259,10 +259,10 @@
       </div>
 
       <div class="card">
-        <div class="card-head"><h3>事業仮払い（BUKATSU等）</h3><span class="more" onclick="go('debt'); setDebtScope('事業');">負債管理へ →</span></div>
+        <div class="card-head"><h3>事業仮払い（今月分の精算状況）</h3><span class="more" onclick="go('check')">引落タブへ →</span></div>
         <div class="chips" style="margin-top:0;">
-          <div class="chip out"><div class="lbl"><span class="dot" style="background:var(--warning)"></span>未精算残高</div><div class="val" id="homeBizTotal">–</div></div>
-          <div class="chip out"><div class="lbl"><span class="dot" style="background:var(--warning)"></span>未精算件数</div><div class="val" id="homeBizCount">–</div></div>
+          <div class="chip out"><div class="lbl"><span class="dot" style="background:var(--warning)"></span>今月未精算額</div><div class="val" id="homeBizTotal">–</div></div>
+          <div class="chip out"><div class="lbl"><span class="dot" style="background:var(--warning)"></span>今月未精算件数</div><div class="val" id="homeBizCount">–</div></div>
         </div>
       </div>
 
@@ -416,10 +416,6 @@
       <option value="事業">事業（仮払い精算対象）</option>
     </select>
   </div>
-  <div class="field-check">
-    <label for="edit-settled">精算済み（事業仮払いをBUKATSU側から回収済み）</label>
-    <input type="checkbox" id="edit-settled">
-  </div>
   <div class="field"><label>支払日（毎月何日）</label><input type="number" min="1" max="31" placeholder="例: 27" id="edit-payday"></div>
   <div class="field"><label>カード会社・決済元</label><input type="text" placeholder="例: 楽天カード" id="edit-card"></div>
   <div class="field"><label>備考（購入内容メモ）</label><input type="text" placeholder="例）BUKATSU ユニフォーム発注分" id="edit-note"></div>
@@ -501,7 +497,7 @@
       document.getElementById('homeExpense').textContent = yen(d.expense);
       document.getElementById('homeDebtTotal').textContent = yen(d.debtTotalRemaining);
       document.getElementById('homeDebtDue').textContent = yen(d.debtMonthlyDue);
-      document.getElementById('homeBizTotal').textContent = yen(d.businessDebtTotalRemaining || 0);
+      document.getElementById('homeBizTotal').textContent = yen(d.businessUnsettledAmount || 0);
       document.getElementById('homeBizCount').textContent = (d.businessUnsettledCount || 0) + '件';
 
       const pending = d.debitChecklistPending || 0;
@@ -657,7 +653,7 @@
         <div class="debt-bar"><div style="width:${deb.progressPct}%"></div></div>
         <div class="debt-foot">
           <span>月々 <b>${yen(deb.monthlyPayment)}</b></span>
-          ${isBiz ? (deb.settled ? '<span class="settled-badge">✓ 精算済み</span>' : '<span style="color:var(--warning);font-weight:600;">未精算</span>') : `<span>完済目安 ${deb.payoffMonth || '−'}</span>`}
+          ${isBiz ? '<span style="color:var(--warning);">精算は「引落」タブで月ごとに管理</span>' : `<span>完済目安 ${deb.payoffMonth || '−'}</span>`}
         </div>
       </div>`;
     }).join('');
@@ -684,11 +680,16 @@
         <label class="check-row ${r.checked ? 'checked' : ''}">
           <input type="checkbox" ${r.checked ? 'checked' : ''} onchange="toggleCheck('${r.debtId}', this.checked)">
           <div class="cr-body">
-            <div class="cr-name">${r.name}</div>
+            <div class="cr-name">${r.name}${r.isBusiness ? ' <span class="scope business" style="margin-left:4px;">事業</span>' : ''}</div>
             <div class="cr-due">${r.dueDate || '予定日未設定'}</div>
           </div>
           <div class="cr-amt">${yen(r.amount)}</div>
-        </label>`).join('');
+        </label>
+        ${r.isBusiness ? `
+        <label class="check-row" style="padding-top:0; padding-left:32px;">
+          <input type="checkbox" ${r.settled ? 'checked' : ''} onchange="toggleSettlement('${r.debtId}', this.checked)">
+          <div class="cr-body"><div class="cr-due" style="color:var(--warning);">事業仮払い精算済み</div></div>
+        </label>` : ''}`).join('');
     } catch (err) {
       console.error('loadChecklist failed', err);
       document.getElementById('checkList').innerHTML =
@@ -704,6 +705,18 @@
       loadDashboard();
     } catch (err) {
       console.error('toggleCheck failed', err);
+      alert('更新に失敗しました。');
+    }
+  }
+
+  async function toggleSettlement(debtId, settled){
+    try {
+      const r = await gasPost('toggleDebtSettlement', { month: baseMonth, debtId, settled });
+      if (r.error) throw new Error(r.error);
+      loadChecklist();
+      loadDashboard();
+    } catch (err) {
+      console.error('toggleSettlement failed', err);
       alert('更新に失敗しました。');
     }
   }
@@ -788,7 +801,6 @@
     document.getElementById('edit-monthly').value = deb.monthlyPayment;
     document.getElementById('edit-rate').value = deb.annualRate;
     document.getElementById('edit-classification').value = deb.classification || '個人';
-    document.getElementById('edit-settled').checked = !!deb.settled;
     document.getElementById('edit-payday').value = deb.paymentDay || '';
     document.getElementById('edit-card').value = deb.cardCompany || '';
     document.getElementById('edit-note').value = deb.note || '';
@@ -811,7 +823,6 @@
         monthlyPayment: document.getElementById('edit-monthly').value,
         annualRate: document.getElementById('edit-rate').value,
         classification: document.getElementById('edit-classification').value,
-        settled: document.getElementById('edit-settled').checked,
         paymentDay: document.getElementById('edit-payday').value,
         cardCompany: document.getElementById('edit-card').value,
         note: document.getElementById('edit-note').value
