@@ -205,9 +205,11 @@ textarea{min-height:80px;resize:vertical}
         <tr style="color:#aaa"><td style="padding:6px 0">種別</td><td style="padding:6px 0;text-align:right">人数</td><td style="padding:6px 0;text-align:right">小計</td></tr>
         <tr style="border-top:1px solid #333"><td style="padding:8px 0">一般</td><td style="padding:8px 0;text-align:right" id="r-general-count">-</td><td style="padding:8px 0;text-align:right" id="r-general-income">-</td></tr>
         <tr style="border-top:1px solid #333"><td style="padding:8px 0">みんB会員</td><td style="padding:8px 0;text-align:right" id="r-minb-count">-</td><td style="padding:8px 0;text-align:right" id="r-minb-income">-</td></tr>
-        <tr style="border-top:1px solid #333"><td style="padding:8px 0">応援団</td><td style="padding:8px 0;text-align:right" id="r-ouendan-count">-</td><td style="padding:8px 0;text-align:right">¥0</td></tr>
-        <tr style="border-top:1px solid #333"><td style="padding:8px 0">回数券</td><td style="padding:8px 0;text-align:right" id="r-ticket-count">-</td><td style="padding:8px 0;text-align:right">¥0</td></tr>
-        <tr style="border-top:1px solid #333"><td style="padding:8px 0">本部・運営</td><td style="padding:8px 0;text-align:right" id="r-staff-count">-</td><td style="padding:8px 0;text-align:right">¥0</td></tr>
+        <tr style="border-top:1px solid #333"><td style="padding:8px 0">ファミリー会員</td><td style="padding:8px 0;text-align:right" id="r-family-count">-</td><td style="padding:8px 0;text-align:right" id="r-family-income">-</td></tr>
+        <tr style="border-top:1px solid #333"><td style="padding:8px 0">体験</td><td style="padding:8px 0;text-align:right" id="r-trial-count">-</td><td style="padding:8px 0;text-align:right" id="r-trial-income">-</td></tr>
+        <tr style="border-top:1px solid #333"><td style="padding:8px 0">応援団</td><td style="padding:8px 0;text-align:right" id="r-ouendan-count">-</td><td style="padding:8px 0;text-align:right" id="r-ouendan-income">-</td></tr>
+        <tr style="border-top:1px solid #333"><td style="padding:8px 0">（内・回数券や無料等で0円処理）</td><td style="padding:8px 0;text-align:right" id="r-ticket-count">-</td><td style="padding:8px 0;text-align:right;color:#888">参考値</td></tr>
+        <tr style="border-top:1px solid #333"><td style="padding:8px 0">本部・運営</td><td style="padding:8px 0;text-align:right" id="r-staff-count">-</td><td style="padding:8px 0;text-align:right" id="r-staff-income">-</td></tr>
         <tr style="border-top:2px solid #fff;font-weight:700;color:#fff"><td style="padding:8px 0">合計</td><td style="padding:8px 0;text-align:right" id="r-total-count">-</td><td style="padding:8px 0;text-align:right" id="r-income-total">-</td></tr>
       </table>
       <input type="hidden" id="r-income" value="0">
@@ -1128,23 +1130,32 @@ async function fillReport() {
   try {
     const logs = await callGAS('getAttendanceLog');
     const filtered = logs.filter(l => l[0] === date && l[2] === sport);
-    const fee = parseFloat(r[5]) || 0;
-    let general = 0, minb = 0, ticket = 0, staff = 0, ouendan = 0;
+    // ★修正：以前は「人数×固定参加費」で収入を再計算していたため、回数券利用・割引クーポン・
+    // ファミリー会員2人目以降などチェックイン時に確定した実際の金額（log[6]）が反映されず、
+    // レポートの数字と実際の集金額がズレる原因になっていた。出席ログに記録済みの実額をそのまま
+    // 積み上げる方式に変更（＝受付で確定した金額＝正）。あわせて、集計から漏れていた
+    // 「ファミリー会員」「体験」もカウント対象に追加。
+    let general = 0, minb = 0, family = 0, trial = 0, staff = 0, ouendan = 0, zeroPay = 0;
+    let generalIncome = 0, minbIncome = 0, familyIncome = 0, trialIncome = 0, staffIncome = 0, ouendanIncome = 0;
     filtered.forEach(log => {
       const type = log[5];
-      if (type === '一般' || type === 'ビジター会員' || type === 'カシワのBUKATSU会員') general++;
-      else if (type === 'みんB会員' || type === 'みんなのBUKATSU会員') minb++;
-      else if (type.includes('回数券')) ticket++;
-      else if (['運営', '代表', '部長', '本部', '特別会員'].includes(type)) staff++;
-      else if (type === '応援団' || type === '応援団会員') ouendan++;
+      const amt = Number(log[6]) || 0;
+      if (type === '一般' || type === 'ビジター会員' || type === 'カシワのBUKATSU会員') { general++; generalIncome += amt; if (amt === 0) zeroPay++; }
+      else if (type === 'みんB会員' || type === 'みんなのBUKATSU会員') { minb++; minbIncome += amt; if (amt === 0) zeroPay++; }
+      else if (type === 'ファミリー会員') { family++; familyIncome += amt; }
+      else if (type === '体験') { trial++; trialIncome += amt; }
+      else if (['運営', '代表', '部長', '本部', '特別会員'].includes(type)) { staff++; staffIncome += amt; }
+      else if (type === '応援団' || type === '応援団会員') { ouendan++; ouendanIncome += amt; }
     });
-    const totalPeople = general + minb + ticket + staff + ouendan;
-    const generalIncome = general * fee, minbIncome = minb * (sport === 'バドミントン' ? 400 : 200), income = generalIncome + minbIncome;
+    const totalPeople = general + minb + family + trial + staff + ouendan;
+    const income = generalIncome + minbIncome + familyIncome + trialIncome + staffIncome + ouendanIncome;
     document.getElementById('r-general-count').textContent = general + '人'; document.getElementById('r-general-income').textContent = '¥' + generalIncome.toLocaleString();
     document.getElementById('r-minb-count').textContent = minb + '人'; document.getElementById('r-minb-income').textContent = '¥' + minbIncome.toLocaleString();
-    document.getElementById('r-ticket-count').textContent = ticket + '人';
-    document.getElementById('r-staff-count').textContent = staff + '人';
-    document.getElementById('r-ouendan-count').textContent = ouendan + '人';
+    document.getElementById('r-family-count').textContent = family + '人'; document.getElementById('r-family-income').textContent = '¥' + familyIncome.toLocaleString();
+    document.getElementById('r-trial-count').textContent = trial + '人'; document.getElementById('r-trial-income').textContent = '¥' + trialIncome.toLocaleString();
+    document.getElementById('r-ouendan-count').textContent = ouendan + '人'; document.getElementById('r-ouendan-income').textContent = '¥' + ouendanIncome.toLocaleString();
+    document.getElementById('r-ticket-count').textContent = zeroPay + '人';
+    document.getElementById('r-staff-count').textContent = staff + '人'; document.getElementById('r-staff-income').textContent = '¥' + staffIncome.toLocaleString();
     document.getElementById('r-total-count').textContent = totalPeople + '人'; document.getElementById('r-income-total').textContent = '¥' + income.toLocaleString();
     document.getElementById('r-income').value = income;
     calcReportPL();
