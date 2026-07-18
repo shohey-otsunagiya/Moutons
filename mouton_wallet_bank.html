@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>Mouton Wallet & BANK</title>
+<title>Mouton Wallet &amp; BANK</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@400;500;600;800&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -95,7 +95,7 @@
   .card{background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:18px; margin-top:14px;}
   .card-head{display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;}
   .card-head h3{font-size:14px; font-weight:700; margin:0; letter-spacing:.02em;}
-  .card-head .more{font-size:11px; color:var(--gold); font-weight:500;}
+  .card-head .more{font-size:11px; color:var(--gold); font-weight:500; cursor:pointer;}
 
   /* Ricework mini */
   .rice-grid{display:flex; gap:22px;}
@@ -119,18 +119,39 @@
   .ledger-row.in .l-amt{color:var(--gold-bright);}
   .ledger-row.out .l-amt{color:var(--text-muted);}
 
+  /* Check rows (引落チェック) */
+  .check-row{display:flex; align-items:center; gap:12px; padding:12px 0; border-bottom:1px dashed var(--border);}
+  .check-row:last-child{border-bottom:none;}
+  .check-row.checked{opacity:.5;}
+  .check-row input[type=checkbox]{width:20px; height:20px; accent-color:var(--gold); flex-shrink:0; cursor:pointer;}
+  .check-row .cr-body{flex:1;}
+  .check-row .cr-name{font-size:13.5px; color:var(--text);}
+  .check-row .cr-due{font-size:11px; color:var(--text-faint); font-family:'JetBrains Mono',monospace; margin-top:2px;}
+  .check-row .cr-amt{font-family:'JetBrains Mono',monospace; font-size:14.5px; font-weight:600; color:var(--text-muted);}
+
   /* Debt cards */
-  .debt-card{background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:18px; margin-top:12px;}
+  .debt-card{background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:18px; margin-top:12px; cursor:pointer;}
   .debt-top{display:flex; align-items:center; justify-content:space-between; margin-bottom:4px;}
   .debt-top .name{font-size:14px; font-weight:700;}
-  .debt-top .kind{font-size:10.5px; color:var(--text-muted); background:var(--surface-2); padding:3px 8px; border-radius:100px; margin-left:8px;}
+  .debt-top .tags{display:flex; gap:6px;}
+  .debt-top .kind{font-size:10.5px; color:var(--text-muted); background:var(--surface-2); padding:3px 8px; border-radius:100px;}
+  .debt-top .scope{font-size:10.5px; padding:3px 8px; border-radius:100px; font-weight:600;}
+  .debt-top .scope.personal{color:var(--positive); background:rgba(74,116,88,0.12);}
+  .debt-top .scope.business{color:var(--warning); background:rgba(155,74,50,0.12);}
   .debt-nums{display:flex; align-items:baseline; gap:8px; margin:10px 0 8px;}
   .debt-nums .rem{font-family:'JetBrains Mono',monospace; font-size:24px; font-weight:700; color:var(--text);}
   .debt-nums .of{font-size:11.5px; color:var(--text-muted);}
   .debt-bar{height:6px; border-radius:3px; background:var(--surface-2); overflow:hidden;}
   .debt-bar > div{height:100%; background:linear-gradient(90deg, var(--warning), var(--gold)); border-radius:3px;}
-  .debt-foot{display:flex; justify-content:space-between; margin-top:10px; font-size:11.5px; color:var(--text-muted);}
+  .debt-foot{display:flex; justify-content:space-between; align-items:center; margin-top:10px; font-size:11.5px; color:var(--text-muted);}
   .debt-foot b{color:var(--gold-bright); font-family:'JetBrains Mono',monospace; font-weight:600;}
+  .settled-badge{font-size:10px; color:var(--positive); font-weight:600;}
+
+  /* Segmented filter (reused for 個人/事業) */
+  .segmented{display:flex; background:var(--surface-2); border-radius:12px; padding:4px; gap:4px;}
+  .segmented button{flex:1; border:none; background:none; color:var(--text-muted); font-size:12px; padding:9px 0;
+    border-radius:9px; cursor:pointer; font-family:'Zen Kaku Gothic New',sans-serif;}
+  .segmented button.active{background:var(--surface); color:var(--gold-bright); font-weight:700;}
 
   /* Cashflow forecast */
   .flow-month{background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:16px 18px; margin-top:12px;}
@@ -146,10 +167,10 @@
   /* Bottom nav */
   nav.tabbar{position:fixed; bottom:0; left:50%; transform:translateX(-50%); width:100%; max-width:480px;
     background:rgba(252,249,240,0.9); backdrop-filter:blur(16px); border-top:1px solid var(--border);
-    display:flex; padding:8px 10px calc(10px + env(safe-area-inset-bottom));}
+    display:flex; padding:8px 6px calc(10px + env(safe-area-inset-bottom));}
   nav.tabbar button{flex:1; background:none; border:none; color:var(--text-faint); font-family:'Zen Kaku Gothic New',sans-serif;
-    display:flex; flex-direction:column; align-items:center; gap:4px; padding:6px 0; cursor:pointer; font-size:10.5px;}
-  nav.tabbar button svg{width:20px; height:20px; stroke:currentColor; fill:none; stroke-width:1.6;}
+    display:flex; flex-direction:column; align-items:center; gap:4px; padding:6px 0; cursor:pointer; font-size:10px;}
+  nav.tabbar button svg{width:19px; height:19px; stroke:currentColor; fill:none; stroke-width:1.6;}
   nav.tabbar button.active{color:var(--gold-bright);}
 
   /* FAB */
@@ -164,20 +185,24 @@
   .scrim.open{opacity:1; pointer-events:auto;}
   .sheet{position:fixed; left:50%; transform:translateX(-50%) translateY(100%); bottom:0; width:100%; max-width:480px;
     background:var(--surface); border-radius:22px 22px 0 0; border:1px solid var(--border-strong); border-bottom:none;
-    padding:14px 20px calc(22px + env(safe-area-inset-bottom)); transition:transform .3s cubic-bezier(.32,.72,0,1); z-index:31;}
+    padding:14px 20px calc(22px + env(safe-area-inset-bottom)); transition:transform .3s cubic-bezier(.32,.72,0,1); z-index:31;
+    max-height:86vh; overflow-y:auto;}
   .sheet.open{transform:translateX(-50%) translateY(0);}
   .sheet .grabber{width:36px; height:4px; background:var(--border-strong); border-radius:2px; margin:0 auto 16px;}
-  .segmented{display:flex; background:var(--surface-2); border-radius:12px; padding:4px; gap:4px; margin-bottom:18px;}
-  .segmented button{flex:1; border:none; background:none; color:var(--text-muted); font-size:12px; padding:9px 0;
-    border-radius:9px; cursor:pointer; font-family:'Zen Kaku Gothic New',sans-serif;}
-  .segmented button.active{background:var(--surface); color:var(--gold-bright); font-weight:700;}
+  .sheet .segmented{margin-bottom:18px;}
   .field{margin-bottom:14px;}
   .field label{font-size:11.5px; color:var(--text-muted); display:block; margin-bottom:6px;}
   .field input, .field select{width:100%; background:var(--bg); border:1px solid var(--border); border-radius:10px;
     padding:12px 12px; color:var(--text); font-size:14px; font-family:'JetBrains Mono',monospace;}
   .field select{font-family:'Zen Kaku Gothic New',sans-serif;}
+  .field-check{display:flex; align-items:center; justify-content:space-between; background:var(--bg);
+    border:1px solid var(--border); border-radius:10px; padding:12px 14px; margin-bottom:14px;}
+  .field-check label{font-size:12.5px; color:var(--text); margin:0;}
+  .field-check input{width:19px; height:19px; accent-color:var(--gold);}
   .save-btn{width:100%; padding:15px; border:none; border-radius:12px; background:linear-gradient(155deg,var(--gold-soft),var(--gold));
     color:#241A05; font-weight:700; font-size:14.5px; cursor:pointer; margin-top:4px;}
+  .ghost-btn{width:100%; padding:13px; border:1px solid var(--border-strong); border-radius:12px; background:none;
+    color:var(--gold-bright); font-weight:700; font-size:13px; cursor:pointer; margin-bottom:12px;}
 
   .toast{position:fixed; left:50%; bottom:170px; transform:translateX(-50%) translateY(20px); z-index:40;
     background:var(--surface-2); border:1px solid var(--border-strong); color:var(--gold-bright);
@@ -226,11 +251,24 @@
       </div>
 
       <div class="card">
-        <div class="card-head"><h3>負債サマリー</h3><span class="more" onclick="go('debt')">負債管理へ →</span></div>
+        <div class="card-head"><h3>負債サマリー（個人分）</h3><span class="more" onclick="go('debt')">負債管理へ →</span></div>
         <div class="chips" style="margin-top:0;">
           <div class="chip out"><div class="lbl"><span class="dot" style="background:var(--warning)"></span>総残高</div><div class="val" id="homeDebtTotal">–</div></div>
           <div class="chip out"><div class="lbl"><span class="dot" style="background:var(--warning)"></span>今月支払い</div><div class="val" id="homeDebtDue">–</div></div>
         </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><h3>事業仮払い（BUKATSU等）</h3><span class="more" onclick="go('debt'); setDebtScope('事業');">負債管理へ →</span></div>
+        <div class="chips" style="margin-top:0;">
+          <div class="chip out"><div class="lbl"><span class="dot" style="background:var(--warning)"></span>未精算残高</div><div class="val" id="homeBizTotal">–</div></div>
+          <div class="chip out"><div class="lbl"><span class="dot" style="background:var(--warning)"></span>未精算件数</div><div class="val" id="homeBizCount">–</div></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><h3>引落チェック</h3><span class="more" onclick="go('check')">確認する →</span></div>
+        <p style="font-size:12.5px; color:var(--text-muted); margin:0;" id="homeCheckStatus">読み込み中…</p>
       </div>
 
       <div class="card">
@@ -264,15 +302,30 @@
 
     <!-- DEBT -->
     <section class="tab-panel" id="panel-debt">
-      <div class="card">
-        <div class="card-head"><h3>負債合計</h3></div>
+      <div class="card" style="margin-top:0;">
+        <div class="card-head"><h3>負債合計（個人分）</h3></div>
         <div class="chips" style="margin-top:0;">
           <div class="chip out"><div class="lbl"><span class="dot" style="background:var(--warning)"></span>総残高</div><div class="val" id="debtTotalRemaining">–</div></div>
           <div class="chip out"><div class="lbl"><span class="dot" style="background:var(--gold)"></span>今月支払い</div><div class="val" id="debtTotalDue">–</div></div>
         </div>
       </div>
 
+      <div class="segmented" id="debtFilter" style="margin-top:14px;">
+        <button class="active" data-scope="all">すべて</button>
+        <button data-scope="個人">個人</button>
+        <button data-scope="事業">事業</button>
+      </div>
+
       <div id="debtCards"><p style="font-size:12px;color:var(--text-faint); margin-top:14px;">読み込み中…</p></div>
+    </section>
+
+    <!-- DEBIT CHECK -->
+    <section class="tab-panel" id="panel-check">
+      <button class="ghost-btn" style="margin-top:0;" onclick="generateChecklist()">今月分のチェックリストを作成</button>
+      <div class="card" style="margin-top:0;">
+        <div class="card-head"><h3 id="checkMonthTitle">引落チェック</h3></div>
+        <div id="checkList"><p style="font-size:12px;color:var(--text-faint);">読み込み中…</p></div>
+      </div>
     </section>
 
     <!-- FORECAST -->
@@ -296,6 +349,9 @@
     </button>
     <button data-tab="debt" onclick="go('debt')">
       <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9 12h6M12 9v6"/></svg>負債
+    </button>
+    <button data-tab="check" onclick="go('check')">
+      <svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>引落
     </button>
     <button data-tab="forecast" onclick="go('forecast')">
       <svg viewBox="0 0 24 24"><path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/></svg>予測
@@ -348,10 +404,19 @@
   <div class="field"><label>残高</label><input type="number" placeholder="0" id="edit-remaining"></div>
   <div class="field"><label>月々返済額</label><input type="number" placeholder="0" id="edit-monthly"></div>
   <div class="field"><label>年利(%)</label><input type="number" step="0.01" placeholder="0" id="edit-rate"></div>
-  <div class="field"><label>最終返済月（回数が確定してるものだけ／例: 2027/06）</label><input type="text" placeholder="未確定なら空欄でOK" id="edit-payoff"></div>
+  <div class="field"><label>区分</label>
+    <select id="edit-classification">
+      <option value="個人">個人</option>
+      <option value="事業">事業（仮払い精算対象）</option>
+    </select>
+  </div>
+  <div class="field-check">
+    <label for="edit-settled">精算済み（事業仮払いをBUKATSU側から回収済み）</label>
+    <input type="checkbox" id="edit-settled">
+  </div>
   <div class="field"><label>支払日（毎月何日）</label><input type="number" min="1" max="31" placeholder="例: 27" id="edit-payday"></div>
   <div class="field"><label>カード会社・決済元</label><input type="text" placeholder="例: 楽天カード" id="edit-card"></div>
-  <div class="field"><label>備考</label><input type="text" placeholder="メモ" id="edit-note"></div>
+  <div class="field"><label>備考（購入内容メモ）</label><input type="text" placeholder="例）BUKATSU ユニフォーム発注分" id="edit-note"></div>
   <button class="save-btn" onclick="saveDebtEdit()">保存する</button>
 </div>
 
@@ -392,6 +457,12 @@
     const [y, mo] = m.split('-');
     return `${y} / ${mo}`;
   }
+  function showToast(msg){
+    const t = document.getElementById('toast');
+    if (msg) t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 1800);
+  }
 
   // ---- ledger rendering ----
   function renderLedger(targetId, rows, limit){
@@ -424,6 +495,12 @@
       document.getElementById('homeExpense').textContent = yen(d.expense);
       document.getElementById('homeDebtTotal').textContent = yen(d.debtTotalRemaining);
       document.getElementById('homeDebtDue').textContent = yen(d.debtMonthlyDue);
+      document.getElementById('homeBizTotal').textContent = yen(d.businessDebtTotalRemaining || 0);
+      document.getElementById('homeBizCount').textContent = (d.businessUnsettledCount || 0) + '件';
+
+      const pending = d.debitChecklistPending || 0;
+      document.getElementById('homeCheckStatus').textContent =
+        pending > 0 ? `未チェックが${pending}件あります` : 'この月はすべて確認済みです';
 
       document.getElementById('riceDays').textContent = d.ricework.daysWorked + '日';
       document.getElementById('riceGross').textContent = yen(d.ricework.grossPay);
@@ -476,6 +553,20 @@
 
   // ---- debt tab ----
   let debtCache = [];
+  let debtScope = 'all';
+
+  document.getElementById('debtFilter').addEventListener('click', (e) => {
+    const btn = e.target.closest('button');
+    if (!btn) return;
+    setDebtScope(btn.dataset.scope);
+  });
+
+  function setDebtScope(scope){
+    debtScope = scope;
+    document.querySelectorAll('#debtFilter button').forEach(b => b.classList.toggle('active', b.dataset.scope === scope));
+    renderDebtCards();
+  }
+
   async function loadDebts(){
     try {
       const d = await gasGet('getDebts');
@@ -484,26 +575,7 @@
       document.getElementById('debtTotalRemaining').textContent = yen(d.totalRemaining);
       document.getElementById('debtTotalDue').textContent = yen(d.totalMonthlyDue);
       populateDebtSelect(d.debts);
-
-      const el = document.getElementById('debtCards');
-      if (!d.debts.length){
-        el.innerHTML = '<p style="font-size:12px;color:var(--text-faint); margin-top:14px;">負債マスタにデータがありません</p>';
-        return;
-      }
-      el.innerHTML = d.debts.map(deb => {
-        const subline = [
-          deb.paymentDay ? `毎月${deb.paymentDay}日` : '',
-          deb.cardCompany || ''
-        ].filter(Boolean).join(' ・ ');
-        return `
-        <div class="debt-card" onclick="openDebtEdit('${deb.id}')" style="cursor:pointer;">
-          <div class="debt-top"><span class="name">${deb.name}</span><span class="kind">${deb.kind || ''}</span></div>
-          ${subline ? `<div style="font-size:11px;color:var(--text-muted);margin-top:2px;">${subline}</div>` : ''}
-          <div class="debt-nums"><span class="rem">${yen(deb.remaining)}</span><span class="of">/ ${yen(deb.principal)}</span></div>
-          <div class="debt-bar"><div style="width:${deb.progressPct}%"></div></div>
-          <div class="debt-foot"><span>月々 <b>${yen(deb.monthlyPayment)}</b></span><span>完済目安 ${deb.payoffMonth || '−'}</span></div>
-        </div>`;
-      }).join('');
+      renderDebtCards();
     } catch (err) {
       console.error('loadDebts failed', err);
       document.getElementById('debtCards').innerHTML =
@@ -511,10 +583,97 @@
     }
   }
 
+  function renderDebtCards(){
+    const el = document.getElementById('debtCards');
+    let list = debtCache;
+    if (debtScope !== 'all') list = list.filter(d => d.classification === debtScope);
+
+    if (!list.length){
+      el.innerHTML = '<p style="font-size:12px;color:var(--text-faint); margin-top:14px;">該当する負債がありません</p>';
+      return;
+    }
+    el.innerHTML = list.map(deb => {
+      const isBiz = deb.classification === '事業';
+      const subline = [
+        deb.paymentDay ? `毎月${deb.paymentDay}日` : '',
+        deb.cardCompany || ''
+      ].filter(Boolean).join(' ・ ');
+      return `
+      <div class="debt-card" onclick="openDebtEdit('${deb.id}')">
+        <div class="debt-top">
+          <span class="name">${deb.name}</span>
+          <div class="tags">
+            <span class="scope ${isBiz ? 'business' : 'personal'}">${deb.classification || '個人'}</span>
+            <span class="kind">${deb.kind || ''}</span>
+          </div>
+        </div>
+        ${subline ? `<div style="font-size:11px;color:var(--text-muted);margin-top:2px;">${subline}</div>` : ''}
+        ${deb.note ? `<div style="font-size:11px;color:var(--text-faint);margin-top:2px;">${deb.note}</div>` : ''}
+        <div class="debt-nums"><span class="rem">${yen(deb.remaining)}</span><span class="of">/ ${yen(deb.principal)}</span></div>
+        <div class="debt-bar"><div style="width:${deb.progressPct}%"></div></div>
+        <div class="debt-foot">
+          <span>月々 <b>${yen(deb.monthlyPayment)}</b></span>
+          ${isBiz ? (deb.settled ? '<span class="settled-badge">✓ 精算済み</span>' : '<span style="color:var(--warning);font-weight:600;">未精算</span>') : `<span>完済目安 ${deb.payoffMonth || '−'}</span>`}
+        </div>
+      </div>`;
+    }).join('');
+  }
+
   function populateDebtSelect(debts){
     const sel = document.getElementById('db-target');
     if (!sel) return;
-    sel.innerHTML = debts.map(d => `<option value="${d.id}">${d.name}</option>`).join('');
+    sel.innerHTML = debts.filter(d => d.remaining > 0).map(d => `<option value="${d.id}">${d.name}</option>`).join('');
+  }
+
+  // ---- debit checklist tab ----
+  async function loadChecklist(){
+    document.getElementById('checkMonthTitle').textContent = `引落チェック（${monthLabel(baseMonth)}）`;
+    try {
+      const d = await gasGet('getDebitChecklist', { month: baseMonth });
+      if (d.error) throw new Error(d.error);
+      const el = document.getElementById('checkList');
+      if (!d.rows || !d.rows.length){
+        el.innerHTML = '<p style="font-size:12px;color:var(--text-faint);">この月のチェックリストはまだありません。上のボタンで作成してください。</p>';
+        return;
+      }
+      el.innerHTML = d.rows.map(r => `
+        <label class="check-row ${r.checked ? 'checked' : ''}">
+          <input type="checkbox" ${r.checked ? 'checked' : ''} onchange="toggleCheck('${r.debtId}', this.checked)">
+          <div class="cr-body">
+            <div class="cr-name">${r.name}</div>
+            <div class="cr-due">${r.dueDate || '予定日未設定'}</div>
+          </div>
+          <div class="cr-amt">${yen(r.amount)}</div>
+        </label>`).join('');
+    } catch (err) {
+      console.error('loadChecklist failed', err);
+      document.getElementById('checkList').innerHTML =
+        '<p style="font-size:12px;color:var(--warning);">読み込みに失敗しました。</p>';
+    }
+  }
+
+  async function toggleCheck(debtId, checked){
+    try {
+      const r = await gasPost('toggleDebitCheck', { month: baseMonth, debtId, checked });
+      if (r.error) throw new Error(r.error);
+      loadChecklist();
+      loadDashboard();
+    } catch (err) {
+      console.error('toggleCheck failed', err);
+      alert('更新に失敗しました。');
+    }
+  }
+
+  async function generateChecklist(){
+    try {
+      const r = await gasPost('generateDebitChecklist', { month: baseMonth });
+      if (r.error) throw new Error(r.error);
+      showToast(`${r.added}件 追加しました`);
+      loadChecklist();
+    } catch (err) {
+      console.error('generateChecklist failed', err);
+      alert('作成に失敗しました。');
+    }
   }
 
   // ---- forecast tab ----
@@ -530,7 +689,7 @@
         <div class="flow-month">
           <div class="fm-head"><span class="m">${m.month.slice(5)}月${m.isFuture ? '（見込）' : ''}</span><span class="net ${net >= 0 ? 'pos' : ''}">${yenSigned(net)}</span></div>
           <div class="flow-line"><span>${m.isFuture ? '収入見込み（Ricework）' : '収入実績'}</span><b>${yen(m.income)}</b></div>
-          <div class="flow-line"><span>${m.isFuture ? '支払い予定（負債返済）' : '支出実績'}</span><b>${yen(m.expense)}</b></div>
+          <div class="flow-line"><span>${m.isFuture ? '支払い予定（個人負債返済）' : '支出実績'}</span><b>${yen(m.expense)}</b></div>
           <div class="flow-track"><div class="out" style="width:${pct}%"></div></div>
         </div>`;
       }).join('');
@@ -546,6 +705,7 @@
     document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
     document.getElementById('panel-' + tab).classList.add('active');
     document.querySelectorAll('.tabbar button').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+    if (tab === 'check') loadChecklist();
   }
 
   // ---- month switch (drives all tabs) ----
@@ -561,6 +721,7 @@
     loadDashboard();
     loadLedgerTab();
     loadForecast();
+    if (document.getElementById('panel-check').classList.contains('active')) loadChecklist();
   }
 
   // ---- entry sheet ----
@@ -582,7 +743,8 @@
     document.getElementById('edit-remaining').value = deb.remaining;
     document.getElementById('edit-monthly').value = deb.monthlyPayment;
     document.getElementById('edit-rate').value = deb.annualRate;
-    document.getElementById('edit-payoff').value = deb.payoffMonthManual || '';
+    document.getElementById('edit-classification').value = deb.classification || '個人';
+    document.getElementById('edit-settled').checked = !!deb.settled;
     document.getElementById('edit-payday').value = deb.paymentDay || '';
     document.getElementById('edit-card').value = deb.cardCompany || '';
     document.getElementById('edit-note').value = deb.note || '';
@@ -604,15 +766,14 @@
         remaining: document.getElementById('edit-remaining').value,
         monthlyPayment: document.getElementById('edit-monthly').value,
         annualRate: document.getElementById('edit-rate').value,
-        payoffMonthManual: document.getElementById('edit-payoff').value,
+        classification: document.getElementById('edit-classification').value,
+        settled: document.getElementById('edit-settled').checked,
         paymentDay: document.getElementById('edit-payday').value,
         cardCompany: document.getElementById('edit-card').value,
         note: document.getElementById('edit-note').value
       });
       closeDebtEdit();
-      const t = document.getElementById('toast');
-      t.classList.add('show');
-      setTimeout(() => t.classList.remove('show'), 1800);
+      showToast('保存しました');
       loadDebts();
       loadDashboard();
     } catch (err) {
@@ -652,9 +813,7 @@
         await gasPost('addDebtPayment', { date: today, debtId, amount: amt });
       }
       closeSheet();
-      const t = document.getElementById('toast');
-      t.classList.add('show');
-      setTimeout(() => t.classList.remove('show'), 1800);
+      showToast('記帳しました');
       refreshAll();
       if (activeType === 'debt') loadDebts();
     } catch (err) {
