@@ -279,6 +279,12 @@
 
     <!-- INCOME / EXPENSE -->
     <section class="tab-panel" id="panel-income">
+      <div class="card" style="margin-top:0;">
+        <div class="card-head"><h3>口座残高</h3><span class="more" id="accountTotal">–</span></div>
+        <div id="accountList"><p style="font-size:12px;color:var(--text-faint);">読み込み中…</p></div>
+        <p style="font-size:10.5px;color:var(--text-faint);margin:8px 0 0;">タップで残高を更新できます</p>
+      </div>
+
       <div class="card">
         <div class="card-head"><h3>収支の推移</h3></div>
         <div id="trendChart" style="display:flex; align-items:flex-end; gap:18px; height:110px; padding-top:10px;"></div>
@@ -529,6 +535,44 @@
       console.error('loadLedgerTab failed', err);
       document.getElementById('ledgerFull').innerHTML =
         '<p style="font-size:12px;color:var(--warning);">読み込みに失敗しました。</p>';
+    }
+    loadAccounts();
+  }
+
+  // ---- accounts (口座残高) ----
+  async function loadAccounts(){
+    try {
+      const d = await gasGet('getAccounts');
+      if (d.error) throw new Error(d.error);
+      document.getElementById('accountTotal').textContent = '合計 ' + yen(d.total);
+      const el = document.getElementById('accountList');
+      if (!d.accounts.length){
+        el.innerHTML = '<p style="font-size:12px;color:var(--text-faint);">口座残高シートに口座名を追加してください（例：ちばぎん / 住信SBI / セブン銀行）</p>';
+        return;
+      }
+      el.innerHTML = d.accounts.map(a => `
+        <div class="ledger-row in" style="cursor:pointer;" onclick="editAccount('${a.name}', ${a.balance})">
+          <div class="l-left"><div class="l-name">${a.name}</div></div>
+          <div class="l-amt">${yen(a.balance)}</div>
+        </div>`).join('');
+    } catch (err) {
+      console.error('loadAccounts failed', err);
+      document.getElementById('accountList').innerHTML =
+        '<p style="font-size:12px;color:var(--warning);">読み込みに失敗しました。</p>';
+    }
+  }
+
+  async function editAccount(name, current){
+    const v = prompt(`${name} の残高を入力`, current);
+    if (v === null || v === '') return;
+    try {
+      const r = await gasPost('updateAccountBalance', { name, balance: Number(v) });
+      if (r.error) throw new Error(r.error);
+      showToast('残高を更新しました');
+      loadAccounts();
+    } catch (err) {
+      console.error('editAccount failed', err);
+      alert('更新に失敗しました。');
     }
   }
 
