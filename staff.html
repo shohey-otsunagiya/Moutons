@@ -203,7 +203,7 @@ textarea{min-height:80px;resize:vertical}
       <div class="card-title" style="margin-top:16px">📥 収入</div>
       <table style="width:100%;font-size:14px;border-collapse:collapse;margin-top:8px">
         <tr style="color:#aaa"><td style="padding:6px 0">種別</td><td style="padding:6px 0;text-align:right">人数</td><td style="padding:6px 0;text-align:right">小計</td></tr>
-        <tr style="border-top:1px solid #333"><td style="padding:8px 0">一般</td><td style="padding:8px 0;text-align:right" id="r-general-count">-</td><td style="padding:8px 0;text-align:right" id="r-general-income">-</td></tr>
+        <tr style="border-top:1px solid #333"><td style="padding:8px 0">カシワ/ビジター会員</td><td style="padding:8px 0;text-align:right" id="r-general-count">-</td><td style="padding:8px 0;text-align:right" id="r-general-income">-</td></tr>
         <tr style="border-top:1px solid #333"><td style="padding:8px 0">みんB会員</td><td style="padding:8px 0;text-align:right" id="r-minb-count">-</td><td style="padding:8px 0;text-align:right" id="r-minb-income">-</td></tr>
         <tr style="border-top:1px solid #333"><td style="padding:8px 0">ファミリー会員</td><td style="padding:8px 0;text-align:right" id="r-family-count">-</td><td style="padding:8px 0;text-align:right" id="r-family-income">-</td></tr>
         <tr style="border-top:1px solid #333"><td style="padding:8px 0">体験</td><td style="padding:8px 0;text-align:right" id="r-trial-count">-</td><td style="padding:8px 0;text-align:right" id="r-trial-income">-</td></tr>
@@ -598,7 +598,7 @@ function renderDailyListFromData(d) {
     if ((r[7] || '⭕') === '❌') return;
     const master = masterMap[r[4]] || {};
     const isMemberTrial = r[8] === '体験参加'; // ★既存会員の他種目体験参加予約（無料特典）
-    allItems.push({ fullname: r[4], nickname: r[5] || r[4], type: master[2] || '一般', usageMode: master[14] || 'スポログ', isNew: false, isMemberTrial });
+    allItems.push({ fullname: r[4], nickname: r[5] || r[4], type: master[2] || 'ビジター会員', usageMode: master[14] || 'スポログ', isNew: false, isMemberTrial });
   });
   const tempUsers = (d.tempAttendees || []).filter(t => t[0] === d.today && !(d.attendees || []).find(a => a[1] === t[1]));
   tempUsers.forEach(u => {
@@ -659,7 +659,7 @@ async function renderDailyList() {
     reservations.forEach(r => {
       if ((r[7] || '⭕') === '❌') return;
       const master = masterMap[r[4]] || {};
-      const type = master[2] || '一般';
+      const type = master[2] || 'ビジター会員';
       const isMemberTrial = r[8] === '体験参加'; // ★既存会員の他種目体験参加予約（無料特典）
       allItems.push({ fullname: r[4], nickname: r[5] || r[4], type, usageMode: master[14] || 'スポログ', isNew: false, isMemberTrial });
     });
@@ -1140,7 +1140,7 @@ async function fillReport() {
     filtered.forEach(log => {
       const type = log[5];
       const amt = Number(log[6]) || 0;
-      if (type === '一般' || type === 'ビジター会員' || type === 'カシワのBUKATSU会員') { general++; generalIncome += amt; if (amt === 0) zeroPay++; }
+      if (type === 'ビジター会員' || type === 'カシワのBUKATSU会員') { general++; generalIncome += amt; if (amt === 0) zeroPay++; }
       else if (type === 'みんB会員' || type === 'みんなのBUKATSU会員') { minb++; minbIncome += amt; if (amt === 0) zeroPay++; }
       else if (type === 'ファミリー会員') { family++; familyIncome += amt; }
       else if (type === '体験') { trial++; trialIncome += amt; }
