@@ -1375,6 +1375,18 @@ const TYPE_CHIP_COLOR={
   '本部':{bg:'#fdeaea',border:'#e39b9b',text:'#a83232'},
   'ビジター会員':{bg:'#eef1f5',border:'#b7c2cf',text:'#5c6b7a'},
 };
+// ★追加：次回開催予定メンバーの表示順（体験参加→運営→応援団→カシワ/ファミリー→みんB→ビジター→その他）
+function _nextMemberSortTier(r){
+  const isNew=r[9]==='NEW'||r[9]==='初参加';
+  if(isNew)return 0;
+  const type=r[10]||'';
+  if(['運営','代表','部長','本部'].includes(type))return 1;
+  if(type==='応援団')return 2;
+  if(type==='カシワのBUKATSU会員'||type==='ファミリー会員')return 3;
+  if(type==='みんなのBUKATSU会員')return 4;
+  if(type==='ビジター会員')return 5;
+  return 6;
+}
 function renderNextMemberCard(members,schedule,capacityInfo){
   document.getElementById('next-member-loading').style.display='none';
   const card=document.getElementById('next-member-card');
@@ -1387,7 +1399,8 @@ function renderNextMemberCard(members,schedule,capacityInfo){
     card.style.display='block';
     return;
   }
-  document.getElementById('next-member-list').innerHTML=members.map(r=>{
+  const sortedMembers=[...members].sort((a,b)=>_nextMemberSortTier(a)-_nextMemberSortTier(b));
+  document.getElementById('next-member-list').innerHTML=sortedMembers.map(r=>{
     const isMe=r[4]===mypageCurrentUser.fullname;
     const isNew=r[9]==='NEW'||r[9]==='初参加';
     const isWaitlisted=r[11]===true;
@@ -1395,6 +1408,9 @@ function renderNextMemberCard(members,schedule,capacityInfo){
     const tc=TYPE_CHIP_COLOR[type];
     let colorStyle=tc?('background:'+tc.bg+';border-color:'+tc.border+';color:'+tc.text+';'):'';
     if(isWaitlisted)colorStyle='background:#f5f5f5;border-color:#ddd;color:#999;opacity:0.7;';
+    // ★追加：ビジター会員・体験参加以外は青枠で囲って、ビジター会員との見分けをつきやすくする
+    const isVisitorOrTrial=type==='ビジター会員'||isNew;
+    if(!isVisitorOrTrial&&!isWaitlisted)colorStyle+='border:2px solid #4a90d9;';
     // 苗字だけ表示（スペースや区切りで分割、なければそのまま）
     const displayName=r[5]?r[5].split(/[\s　]/)[0]:r[5];
     return'<span class="member-chip" style="'+colorStyle+(isMe&&!isWaitlisted?'border-color:#4CAF50;background:#f0fdf4;':'')+'">'+(isWaitlisted?'⏳':(r[7]||'⭕'))+' '+displayName+(isNew?'<span class="new-badge">NEW</span>':'')+(isWaitlisted?'<span class="new-badge" style="background:#999">待機</span>':'')+(isMe?' 👈':'')+'</span>';
