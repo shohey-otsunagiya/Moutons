@@ -367,6 +367,10 @@ input[type=radio]{width:20px;height:20px;accent-color:#1a3a5c;cursor:pointer;fle
         <button id="schedule-submit-btn" onclick="submitScheduleReservations()" style="width:100%;padding:16px;background:linear-gradient(135deg,#1a3a5c,#0f2744);color:#fff;border:none;border-radius:14px;font-size:16px;font-weight:700;cursor:pointer;margin-top:12px;">選択した日程を予約する</button>
       </div>
     </div>
+    <div class="card" id="invited-trials-card" style="display:none">
+      <div class="card-title"><div class="card-title-dot"></div>あなたが招待した体験予定者</div>
+      <div id="invited-trials-list" style="margin-top:8px"></div>
+    </div>
     <div class="card" id="trial-card">
       <div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer" onclick="onTrialAccordionClick()">
         <div class="card-title" style="margin-bottom:0"><div class="card-title-dot"></div>体験参加<span id="trial-lock" style="display:none;margin-left:6px">🔐</span></div>
@@ -1356,6 +1360,7 @@ async function loadReserveData(){
     const data = await callGAS('getReserveTabData', mypageCurrentUser.fullname, mypageCurrentUser.memberSport||'全て');
     renderScheduleList(data.schedules, data.reservations);
     loadTrialData();
+    loadInvitedTrials();
     if(data.nextSchedule){
       renderNextMemberCard(data.nextMembers||[], data.nextSchedule, data.capacityInfo);
     }else{
@@ -3009,6 +3014,36 @@ async function cancelSingleReserve(date,sport){
     await callGAS('cancelReservation',date,sport,mypageCurrentUser.fullname);
     alert('予約をキャンセルしました');
     loadReserveData();
+  }catch(e){alert('エラー：'+e.message);}
+}
+
+// ===== 招待した体験予定者一覧（招待者本人がキャンセル操作できる） =====
+async function loadInvitedTrials(){
+  if(!mypageCurrentUser)return;
+  const card=document.getElementById('invited-trials-card');
+  try{
+    const list=await callGAS('getMyInvitedTrials',mypageCurrentUser.fullname);
+    if(!list||!list.length){card.style.display='none';return;}
+    card.style.display='block';
+    document.getElementById('invited-trials-list').innerHTML=list.map(t=>
+      '<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #f0f0f0">'
+      +'<div><div style="font-size:14px;font-weight:700">'+t.fullname+'</div>'
+      +'<div style="font-size:12px;color:#888">'+(SPORT_ICON[t.sport]||'')+' '+t.sport+' ／ '+t.scheduleDate+'</div></div>'
+      +'<button onclick="cancelInvitedTrial(\''+t.internalId+'\',\''+t.fullname+'\')" style="background:#fdeaea;color:#a83232;border:none;border-radius:8px;padding:8px 14px;font-size:12px;font-weight:700;cursor:pointer">キャンセル</button>'
+      +'</div>'
+    ).join('');
+  }catch(e){card.style.display='none';}
+}
+
+async function cancelInvitedTrial(internalId,fullname){
+  if(!mypageCurrentUser)return;
+  if(!confirm(fullname+'さんの体験参加をキャンセルしますか？'))return;
+  try{
+    const result=await callGAS('cancelMyInvitedTrial',mypageCurrentUser.fullname,internalId);
+    if(result==='forbidden'){alert('この方はあなたが招待した体験予定者ではありません');return;}
+    if(result==='not_trial'){alert('すでに体験予定の状態ではないようです');loadInvitedTrials();return;}
+    alert(fullname+'さんの体験参加をキャンセルしました');
+    loadInvitedTrials();
   }catch(e){alert('エラー：'+e.message);}
 }
 
