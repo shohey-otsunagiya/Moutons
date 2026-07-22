@@ -348,6 +348,7 @@ input[type=radio]{width:20px;height:20px;accent-color:#1a3a5c;cursor:pointer;fle
   <div id="reserve-main" style="display:none">
     <div id="next-member-card" class="next-member-card" style="display:none">
       <div class="card-title"><div class="card-title-dot"></div>次回の参加予定メンバー</div>
+      <div id="next-member-sport-tabs" style="display:flex;gap:6px;margin-bottom:10px"></div>
       <div id="next-member-info" style="font-size:12px;color:#888;margin-bottom:10px"></div>
       <div id="next-member-list"></div>
       <div id="next-member-count" style="font-size:11px;color:#aaa;margin-top:8px;text-align:right"></div>
@@ -1350,6 +1351,11 @@ async function initReserveTab(){
   loadReserveData();
 }
 
+// ★追加：予約タブでワンタップ切替できる種目一覧（表示順：バスケ・バレー・バド）
+const NEXT_MEMBER_SPORTS=['バスケットボール','バレーボール','バドミントン'];
+let _nextBySportData={};
+let _currentNextSport=null;
+
 async function loadReserveData(){
   document.getElementById('mypage-schedule-list').innerHTML='<div class="empty">読み込み中...</div>';
   document.getElementById('next-member-card').style.display='none';
@@ -1361,12 +1367,46 @@ async function loadReserveData(){
     renderScheduleList(data.schedules, data.reservations);
     loadTrialData();
     loadInvitedTrials();
-    if(data.nextSchedule){
-      renderNextMemberCard(data.nextMembers||[], data.nextSchedule, data.capacityInfo);
+    // ★追加：種目ごとの直近予定＋参加予定メンバーをまとめて保持し、ワンタップ切替できるようにする
+    _nextBySportData=data.nextBySport||{};
+    const hasAnySchedule=NEXT_MEMBER_SPORTS.some(sp=>_nextBySportData[sp]&&_nextBySportData[sp].schedule);
+    if(hasAnySchedule){
+      selectNextMemberSport(_pickInitialNextSport());
     }else{
       document.getElementById('next-member-loading').style.display='none';
     }
   }catch(e){document.getElementById('next-member-loading').style.display='none';}
+}
+
+// ★追加：最初に開くタブを決める（自分の登録種目を優先→無ければ開催予定がある種目→それも無ければ先頭）
+function _pickInitialNextSport(){
+  const mySport=(mypageCurrentUser&&mypageCurrentUser.memberSport)||'';
+  const tokens=mySport.split('＋').filter(Boolean);
+  const mine=NEXT_MEMBER_SPORTS.find(sp=>tokens.some(t=>sp.includes(t))&&_nextBySportData[sp]&&_nextBySportData[sp].schedule);
+  if(mine)return mine;
+  const anyScheduled=NEXT_MEMBER_SPORTS.find(sp=>_nextBySportData[sp]&&_nextBySportData[sp].schedule);
+  if(anyScheduled)return anyScheduled;
+  return NEXT_MEMBER_SPORTS[0];
+}
+
+// ★追加：種目タブのボタン列を描画（アクティブなタブをハイライト）
+function renderNextMemberSportTabs(){
+  const wrap=document.getElementById('next-member-sport-tabs');
+  if(!wrap)return;
+  wrap.innerHTML=NEXT_MEMBER_SPORTS.map(sport=>{
+    const active=sport===_currentNextSport;
+    const icon=SPORT_ICON[sport]||'';
+    const label=sport.replace('ボール','').replace('ミントン','');
+    return '<button type="button" onclick="selectNextMemberSport(\''+sport+'\')" style="flex:1;padding:8px 4px;border-radius:10px;border:1.5px solid '+(active?'#1a3a5c':'#e0e8f0')+';background:'+(active?'#1a3a5c':'#f8fafc')+';color:'+(active?'#fff':'#555')+';font-size:12px;font-weight:700;cursor:pointer">'+icon+' '+label+'</button>';
+  }).join('');
+}
+
+// ★追加：タップされた種目に切り替えて次回メンバーカードを再描画
+function selectNextMemberSport(sport){
+  _currentNextSport=sport;
+  renderNextMemberSportTabs();
+  const entry=_nextBySportData[sport]||{schedule:null,members:[],capacityInfo:null};
+  renderNextMemberCard(entry.members||[],entry.schedule,entry.capacityInfo);
 }
 
 const TYPE_CHIP_COLOR={
@@ -1400,7 +1440,15 @@ function _nextMemberDtKey(s){
 function renderNextMemberCard(members,schedule,capacityInfo){
   document.getElementById('next-member-loading').style.display='none';
   const card=document.getElementById('next-member-card');
-  if(!schedule){card.style.display='none';return;}
+  card.style.display='block';
+  renderNextMemberSportTabs();
+  if(!schedule){
+    document.getElementById('next-member-info').textContent='';
+    document.getElementById('next-member-list').innerHTML='<div style="color:#bbb;font-size:13px;padding:4px 0">この種目の開催予定はまだありません</div>';
+    document.getElementById('next-member-count').textContent='';
+    renderCapacityBanner(null);
+    return;
+  }
   document.getElementById('next-member-info').textContent=(SPORT_ICON[schedule[4]]||'')+' '+schedule[4]+' ／ '+schedule[0]+'（'+getDow(schedule[0])+'）';
   if(!members||!members.length){
     document.getElementById('next-member-list').innerHTML='<div style="color:#bbb;font-size:13px;padding:4px 0">まだ予約者がいません</div>';
