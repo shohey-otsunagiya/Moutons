@@ -1370,8 +1370,8 @@ async function loadReserveData(){
 }
 
 const TYPE_CHIP_COLOR={
-  'カシワのBUKATSU会員':{bg:'#f4f7fb',border:'#c3cfdd',text:'#3a5578'},
-  'ファミリー会員':{bg:'#f4f7fb',border:'#c3cfdd',text:'#3a5578'},
+  'カシワのBUKATSU会員':{bg:'#e8f1fc',border:'#9cc0ea',text:'#2c5f9e'},
+  'ファミリー会員':{bg:'#e8f1fc',border:'#9cc0ea',text:'#2c5f9e'},
   'みんなのBUKATSU会員':{bg:'#f4f9f1',border:'#c3dcb5',text:'#4d7a33'},
   '応援団':{bg:'#fdf9ee',border:'#e6d4a0',text:'#a3821f'},
   '運営':{bg:'#fdeaea',border:'#e39b9b',text:'#a83232'},
@@ -1392,6 +1392,11 @@ function _nextMemberSortTier(r){
   if(type==='ビジター会員')return 5;
   return 6;
 }
+// ★追加：同じtier内では申込が早い順に並べる（申込日時=r[0]）
+function _nextMemberDtKey(s){
+  const t=new Date(String(s||''));
+  return isNaN(t.getTime())?0:t.getTime();
+}
 function renderNextMemberCard(members,schedule,capacityInfo){
   document.getElementById('next-member-loading').style.display='none';
   const card=document.getElementById('next-member-card');
@@ -1404,7 +1409,11 @@ function renderNextMemberCard(members,schedule,capacityInfo){
     card.style.display='block';
     return;
   }
-  const sortedMembers=[...members].sort((a,b)=>_nextMemberSortTier(a)-_nextMemberSortTier(b));
+  const sortedMembers=[...members].sort((a,b)=>{
+    const tierDiff=_nextMemberSortTier(a)-_nextMemberSortTier(b);
+    if(tierDiff!==0)return tierDiff;
+    return _nextMemberDtKey(a[0])-_nextMemberDtKey(b[0]);
+  });
   document.getElementById('next-member-list').innerHTML=sortedMembers.map(r=>{
     const isMe=r[4]===mypageCurrentUser.fullname;
     const isNew=r[9]==='NEW'||r[9]==='初参加';
